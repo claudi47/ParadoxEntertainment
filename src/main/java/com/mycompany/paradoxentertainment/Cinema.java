@@ -24,14 +24,13 @@ public class Cinema {
     }
     
     public boolean verificaNomeSala(String nomeSala) {
-        boolean salaGiàEsistente = false;
         for(Sala s: elencoSale) {
             if(nomeSala.equals(s.getNomeSala())) {
-                salaGiàEsistente = true;
                 System.out.println("Nome già in uso");
+                return true;
             }
         } 
-        return salaGiàEsistente;
+        return false;
     }
     
     public void inserisciSala(String nomeSala, int postiStandard, int postiVIP) {
