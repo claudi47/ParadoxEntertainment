@@ -11,7 +11,6 @@ import java.io.InputStreamReader;
 public class ParadoxEntertainment {
     private static ParadoxEntertainment paradoxEntertainment; //Singleton
     public static Cinema c;
-    static Sala salaCorrente;
     static BufferedReader bf = new BufferedReader(new InputStreamReader(System.in));
     
     /**
