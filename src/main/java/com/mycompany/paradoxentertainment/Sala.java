@@ -5,7 +5,6 @@ public class Sala {
     private int postiTot;
     private int postiStandard;
     private int postiVIP;
-    
 
     public Sala(String IDSala, int postiStandard, int postiVIP) {
         this.nomeSala = IDSala;
@@ -29,14 +28,12 @@ public class Sala {
     public int getPostiVIP() {
         return postiVIP;
     }
-    
+
     @Override
     public String toString() {
-        StringBuilder s = new StringBuilder();
-        s.append("\nSala "+ nomeSala + "\n" +
+        return "\nSala "+ nomeSala + "\n" +
                 " - Capienza: " + postiTot + "\n" +
                 " - Posti Standard: " + postiStandard + "\n" +
-                " - Posti VIP: " + postiVIP);
-        return s.toString();
+                " - Posti VIP: " + postiVIP; 
     }
 }
