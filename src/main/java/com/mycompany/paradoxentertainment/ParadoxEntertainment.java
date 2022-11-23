@@ -19,6 +19,7 @@ public class ParadoxEntertainment {
     BufferedReader bf = new BufferedReader(new InputStreamReader(System.in));
     private Map<Integer, Pellicola> elencoPellicole;
     private Pellicola pellicolaCorrente, pellicolaSelezionata;
+    private Map<Integer, Locandina> elencoLocandine;
     
     /**
      * Singleton
@@ -34,6 +35,7 @@ public class ParadoxEntertainment {
     private ParadoxEntertainment() {
         this.c = Cinema.getInstance();
         this.elencoPellicole = new HashMap();
+        this.elencoLocandine = new HashMap();
     }
     
     public void menuLogin() throws IOException {
@@ -73,9 +75,10 @@ public class ParadoxEntertainment {
     public void menuAmministratore() throws IOException {
         int scelta;
         
-        System.out.println("\nMenu Amministratore \n "
-                + "1. Aggiungi Sala \n "
+        System.out.println("\nMenu Amministratore \n"
+                + "1. Aggiungi Sala \n"
                 + "2. Aggiungi Film \n"
+                + "3. Aggiungi Proiezione\n"
                 + "Altro. Torna al Login");
         
         scelta = Integer.parseInt(bf.readLine());
@@ -83,18 +86,21 @@ public class ParadoxEntertainment {
         switch (scelta) {
             case 1: //UC1 Inserimento Sala
                 inserisciSala();
-                menuAmministratore();
                 break;
             
             case 2:
                 inserisciPellicola();
-                menuAmministratore();
                 break;
-            
+                
+            case 3:
+                inserisciProiezione();
+                break;
+                
             default:
                 System.out.println("Logout \n\n");
                 break;
         }
+        menuAmministratore();
     }
             
     public void inserisciSala() throws IOException {
@@ -153,6 +159,7 @@ public class ParadoxEntertainment {
         String path = null;
         int baseStampa = 0, altezzaStampa = 0;
         boolean isLocandina = false;
+        Locandina locandina = null;
                
         do {
             System.out.println("\nInserisci il titolo della pellicola");
@@ -187,12 +194,14 @@ public class ParadoxEntertainment {
                     + " - Regista: " + regista + "\n"
                     + " - Anno: " + anno + "\n"
                     + " - Genere: " + genere + "\n"
-                    + " - Durata: " + durata + "\n"
-                    + " - Percorso locandina: " + path + "\n"
-                    + " - Dimensione base locandina: " + baseStampa + "\n"
-                    + " - Dimensione altezza locandina: " + altezzaStampa + "\n"
-                    + "Premere 1 per confermare, 0 per annullare l'inserimento"
-                    );
+                    + " - Durata: " + durata);
+       
+        if(isLocandina) 
+            System.out.println(" - Percorso locandina: " + path + "\n"
+                        + " - Dimensione base locandina: " + baseStampa + "\n"
+                        + " - Dimensione altezza locandina: " + altezzaStampa);
+        
+        System.out.println("Premere 1 per confermare, 0 per annullare l'inserimento"); 
         
         if(Integer.parseInt(bf.readLine()) == 0) {
             System.out.println("Inserimento annullato\n");
@@ -201,10 +210,14 @@ public class ParadoxEntertainment {
         
         // creazione oggetto Pellicola
         pellicolaCorrente = new Pellicola(nomePellicola, regista, anno, genere, durata, elencoPellicole.size()+1);
-        pellicolaCorrente.inserisciLocandina(path, baseStampa, altezzaStampa);
-        
         confermaPellicola();
-        System.out.println("\nInserimento completato della Pellicola:\n" + pellicolaCorrente.toString());
+        System.out.println("\nInserimento completato della Pellicola:\n" + elencoPellicole.get(pellicolaCorrente.getIdPellicola()));
+        
+        if(isLocandina) {
+            locandina = pellicolaCorrente.inserisciLocandina(path, baseStampa, altezzaStampa);
+            elencoLocandine.put(locandina.getPellicola(), locandina);
+            System.out.println(elencoLocandine.get(locandina.getPellicola()));
+        }
     }
     
     public boolean verificaPellicola(String nomePellicola, String regista, int anno) {
@@ -221,6 +234,17 @@ public class ParadoxEntertainment {
             
     public void confermaPellicola() {
         elencoPellicole.put(pellicolaCorrente.getIdPellicola(), pellicolaCorrente);
+    }
+    
+    public void inserisciProiezione() throws IOException {
+        if(elencoPellicole.isEmpty() || c.elencoSale.isEmpty()) {
+            System.out.println("Errore: non sono presenti sale o pellicole nel sistema, necessarie per creare uno spettacolo\n");
+            return;
+        }
+        
+        c.stampaSale();
+        System.out.println("Inserisci l'id della sala in cui tenere la proiezione\n");
+        System.out.println((c.elencoSale.get(Integer.parseInt(bf.readLine())-1)).toString());
     }
     
     public static String getInputPath(String s) {

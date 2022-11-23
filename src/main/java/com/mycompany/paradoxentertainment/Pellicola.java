@@ -7,7 +7,6 @@ public class Pellicola {
     private String genere;
     private int durata;
     private int idPellicola;
-    private Locandina locandina;
     
     public Pellicola(String nomePellicola, String regista, int anno, String genere, int durata, int idPellicola) {
         this.nomePellicola = nomePellicola;
@@ -18,9 +17,8 @@ public class Pellicola {
         this.idPellicola = idPellicola;
     }  
 
-    public void inserisciLocandina(String path, int baseStampa, int altezzaStampa) {
-        Locandina locandina = new Locandina(path, baseStampa, altezzaStampa);
-        this.locandina = locandina;
+    public Locandina inserisciLocandina(String path, int baseStampa, int altezzaStampa) {
+        return new Locandina(path, baseStampa, altezzaStampa, this.idPellicola);
     }
     
     public String getNomePellicola() {
@@ -43,9 +41,11 @@ public class Pellicola {
         this.idPellicola = idPellicola;
     }
     
+    /*
     public void setLocandina(Locandina locandina) {
         this.locandina = locandina;
     }
+    */
 
     @Override
     public String toString() {
@@ -54,8 +54,9 @@ public class Pellicola {
                 "\n - Anno: " + anno + 
                 "\n - Genere: " + genere + 
                 "\n - Durata: " + durata + 
-                "\n - ID: " + idPellicola + 
-                "\n - Locandina: " + locandina;
+                "\n - ID: " + idPellicola 
+                //"\n - Locandina:" + locandina
+                ;
     }
     
     
