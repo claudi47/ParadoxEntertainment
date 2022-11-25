@@ -33,6 +33,10 @@ public class Pellicola {
         return anno;
     }
 
+    public int getDurata() {
+        return durata;
+    }
+
     public int getIdPellicola() {
         return idPellicola;
     }
@@ -40,24 +44,16 @@ public class Pellicola {
     public void setIdPellicola(int idPellicola) {
         this.idPellicola = idPellicola;
     }
-    
-    /*
-    public void setLocandina(Locandina locandina) {
-        this.locandina = locandina;
-    }
-    */
 
     @Override
     public String toString() {
-        return " - Titolo: " + nomePellicola + 
+        return nomePellicola + 
                 "\n - Regista: " + regista + 
                 "\n - Anno: " + anno + 
                 "\n - Genere: " + genere + 
-                "\n - Durata: " + durata + 
+                "\n - Durata: " + durata + " minuti" +
                 "\n - ID: " + idPellicola 
                 //"\n - Locandina:" + locandina
                 ;
     }
-    
-    
 }

@@ -5,6 +5,9 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Path;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.HashMap;
 import java.util.Map;
 import javax.swing.JFileChooser;
@@ -17,9 +20,9 @@ public class ParadoxEntertainment {
     private static ParadoxEntertainment paradoxEntertainment; //Singleton
     private Cinema c;
     BufferedReader bf = new BufferedReader(new InputStreamReader(System.in));
-    private Map<Integer, Pellicola> elencoPellicole;
+    private Map<Integer, Pellicola> elencoPellicole;  //<IdPellicola, Pellicola>
     private Pellicola pellicolaCorrente, pellicolaSelezionata;
-    private Map<Integer, Locandina> elencoLocandine;
+    private Map<Integer, Locandina> elencoLocandine; // <IdPellicola, Locandina>
     
     /**
      * Singleton
@@ -79,6 +82,9 @@ public class ParadoxEntertainment {
                 + "1. Aggiungi Sala \n"
                 + "2. Aggiungi Film \n"
                 + "3. Aggiungi Proiezione\n"
+                + "4. Gestisci Sale\n"
+                + "5. Gestisci Pellicole\n"
+                + "6. Gestisci Proiezioni\n"
                 + "Altro. Torna al Login");
         
         scelta = Integer.parseInt(bf.readLine());
@@ -96,9 +102,21 @@ public class ParadoxEntertainment {
                 inserisciProiezione();
                 break;
                 
+            case 4: 
+                gestisciSale();
+                break;
+                
+            case 5:
+                gestisciPellicole();
+                break;
+                
+            case 6:
+                gestisciProiezioni();
+                break;
+                
             default:
                 System.out.println("Logout \n\n");
-                break;
+                menuLogin();
         }
         menuAmministratore();
     }
@@ -110,7 +128,8 @@ public class ParadoxEntertainment {
         int postiTot;
         
         do {
-            System.out.println("\nInserisci l'identificativo della sala");
+            System.out.println("\nInserimento Sala: \n"
+                    + "Inserisci l'identificativo della sala");
             nomeSala = bf.readLine();
         } while(c.verificaNomeSala(nomeSala) == true);
         
@@ -141,8 +160,7 @@ public class ParadoxEntertainment {
         //Viene aggiunto all'elenco delle sale del cinema
         confermaSala();
         
-        System.out.println("Inserimento confermato!");
-        c.stampaSale();
+        System.out.println("Inserimento completato con successo");
     }
     
     public void confermaSala() {
@@ -211,7 +229,7 @@ public class ParadoxEntertainment {
         // creazione oggetto Pellicola
         pellicolaCorrente = new Pellicola(nomePellicola, regista, anno, genere, durata, elencoPellicole.size()+1);
         confermaPellicola();
-        System.out.println("\nInserimento completato della Pellicola:\n" + elencoPellicole.get(pellicolaCorrente.getIdPellicola()));
+        System.out.println("\nInserimento della Pellicola completato con successo\n");
         
         if(isLocandina) {
             locandina = pellicolaCorrente.inserisciLocandina(path, baseStampa, altezzaStampa);
@@ -237,14 +255,134 @@ public class ParadoxEntertainment {
     }
     
     public void inserisciProiezione() throws IOException {
-        if(elencoPellicole.isEmpty() || c.elencoSale.isEmpty()) {
-            System.out.println("Errore: non sono presenti sale o pellicole nel sistema, necessarie per creare uno spettacolo\n");
+        int idPellicola;
+        
+        // Verifica che esista almeno una Sala e una Pellicola prima di inserire una Proiezione
+        if(elencoPellicole.isEmpty() || c.isElencoSaleEmpty()) {
+            System.out.println("\nErrore: non sono presenti sale o pellicole nel sistema, necessarie per creare uno spettacolo\n");
             return;
         }
         
+        // Seleziona Pellicola da proiettare, restituisce pellicolaSelezionata (selezionaPellicolaPerProiezione)
+        System.out.println("\nElenco Pellicole presenti nel sistema: ");
+        stampaPellicole();
+        
+        System.out.println("\nInserire l'ID della pellicola da proiettare");
+        idPellicola = Integer.parseInt(bf.readLine());
+        
+        if((pellicolaSelezionata = elencoPellicole.get(idPellicola)) == null) {
+            System.out.println("Errore: selezione non valida");
+            return;
+        } else
+            System.out.println("Pellicola selezionata: " + pellicolaSelezionata.getNomePellicola() + ", durata: " + pellicolaSelezionata.getDurata() + " minuti");
+       
+        // Seleziona Sala in cui proiettare, restutisce salaSelezionata (selezionaSalaPerProiezione)
+        c.inserisciProiezione(pellicolaSelezionata);
+    }
+    
+    public void stampaSale() {
         c.stampaSale();
-        System.out.println("Inserisci l'id della sala in cui tenere la proiezione\n");
-        System.out.println((c.elencoSale.get(Integer.parseInt(bf.readLine())-1)).toString());
+    }
+    
+    public void gestisciSale() throws IOException {
+        int scelta;
+        
+        System.out.println("\nGestione Sale\n"
+                + "1. Visualizza Sale \n"
+                + "2. Modifica Sala \n"
+                + "3. Elimina Sala\n"
+                + "Altro. Torna al menu");
+        
+        scelta = Integer.parseInt(bf.readLine());
+        
+        switch (scelta) {
+            case 1: //UC1 Inserimento Sala
+                stampaSale();
+                break;
+            
+            case 2:
+                System.out.println("Non ancora implementata...\n");
+                break;
+                
+            case 3:
+                System.out.println("Non ancora implementata...\n");
+                break;
+                
+            default:
+                menuAmministratore();
+        }
+        gestisciSale();
+    }
+    
+    public void stampaPellicole() {
+        if(elencoPellicole.isEmpty()) 
+            System.out.println("Non esistono pellicole\n");
+        for(Map.Entry<Integer, Pellicola> set : elencoPellicole.entrySet()) 
+            System.out.println("\n" + set.getValue().toString());
+    }
+    
+    public void gestisciPellicole() throws IOException {
+        int scelta;
+        
+        System.out.println("\nGestione Pellicole\n"
+                + "1. Visualizza Pellicole \n"
+                + "2. Modifica Pellicole \n"
+                + "3. Elimina Pellicole\n"
+                + "Altro. Torna al menu");
+        
+        scelta = Integer.parseInt(bf.readLine());
+        
+        switch (scelta) {
+            case 1: //UC1 Inserimento Sala
+                stampaPellicole();
+                break;
+            
+            case 2:
+                System.out.println("Non ancora implementata...\n");
+                break;
+                
+            case 3:
+                System.out.println("Non ancora implementata...\n");
+                break;
+                
+            default:
+                menuAmministratore();
+        }
+        gestisciPellicole();
+    }
+    
+    public void stampaProgrammazione() {
+        c.stampaProgrammazione();
+    }
+    
+    public void gestisciProiezioni() throws IOException {
+        int scelta;
+        
+        System.out.println("\nGestione Proiezioni\n"
+                + "1. Visualizza Programmazione \n"
+                + "2. Modifica Proiezioni \n"
+                + "3. Elimina Proiezioni\n"
+                + "Altro. Torna al menu");
+        
+        scelta = Integer.parseInt(bf.readLine());
+        
+        switch (scelta) {
+            case 1: //UC1 Inserimento Sala
+                stampaProgrammazione();
+                break;
+            
+            case 2:
+                System.out.println("Non ancora implementata...\n");
+                break;
+                
+            case 3:
+                System.out.println("Non ancora implementata...\n");
+                break;
+                
+            default:
+                menuAmministratore();
+        }
+        gestisciProiezioni();
     }
     
     public static String getInputPath(String s) {
