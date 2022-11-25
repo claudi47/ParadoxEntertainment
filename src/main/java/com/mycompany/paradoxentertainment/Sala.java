@@ -31,7 +31,7 @@ public class Sala {
 
     @Override
     public String toString() {
-        return "\nSala "+ nomeSala + "\n" +
+        return "Sala "+ nomeSala + "\n" +
                 " - Capienza: " + postiTot + "\n" +
                 " - Posti Standard: " + postiStandard + "\n" +
                 " - Posti VIP: " + postiVIP; 
