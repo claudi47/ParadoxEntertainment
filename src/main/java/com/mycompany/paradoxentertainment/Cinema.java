@@ -69,7 +69,7 @@ public class Cinema {
         return elencoSale.get(idSala);
     }
 
-    public void inserisciProiezione(Pellicola p) throws IOException {
+    public boolean inserisciProiezione(Pellicola p) throws IOException {
         LocalTime orario = null;
         boolean isInvalid = false;
         
@@ -88,14 +88,14 @@ public class Cinema {
             //verifica orario per proiezione 
             if(orario.getHour() < 16 || orario.getHour() > 23) {
                 System.out.println("Orario inserito non valido: è consentito aggiungere spettacoli tra le 16:00 e 00:00");
-                return;
+                return false;
             } if(orario.getMinute() < 0 || orario.getMinute() > 59) {
                 System.out.println("Orario inserito non valido: formato dei minuti non valido (deve essere tra 00 e 59)");
-                return;
+                return false;
             } 
         } catch(DateTimeParseException ex) {
             System.out.println("Inserimento dell'orario non valido: inserire nel formato 'hh:mm'");
-            return;
+            return false;
         }
         
         // verifica dello spettacolo in inserimento 
@@ -114,7 +114,7 @@ public class Cinema {
                 } 
             }
             if(isInvalid)
-                return;
+                return false;
         }
         
         System.out.println("\nRiepilogo:"
@@ -125,18 +125,21 @@ public class Cinema {
         
         if(Integer.parseInt(bf.readLine()) == 0) {
             System.out.println("Inserimento annullato\n");
-            return;
+            return false;
         }
         
         if(!elencoProiezioni.containsKey(salaSelezionata.getNomeSala()))
             elencoProiezioni.put(salaCorrente.getNomeSala(), new ArrayList());
         
         proiezioneCorrente = new Proiezione(elencoProiezioni.get(salaSelezionata.getNomeSala()).size()+1, salaSelezionata, p, orario);
+        return true;
+    }
+    
+    public void confermaProiezione() {
         elencoProiezioni.get(salaSelezionata.getNomeSala()).add(proiezioneCorrente);
         System.out.println("Inserimento della proiezione completato con successo");
-          
-        //c.verificaOrarioProiezione(orario, LocalTime.parse(text, DateTimeFormatter.ISO_DATE)pellicolaSelezionata.getDurata());
     }
+    
     
     public void stampaProgrammazione() {
         if(elencoProiezioni.isEmpty()) 
