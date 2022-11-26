@@ -5,10 +5,13 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Path;
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import javax.swing.JFileChooser;
 
@@ -23,6 +26,8 @@ public class ParadoxEntertainment {
     private Map<Integer, Pellicola> elencoPellicole;  //<IdPellicola, Pellicola>
     private Pellicola pellicolaCorrente, pellicolaSelezionata;
     private Map<Integer, Locandina> elencoLocandine; // <IdPellicola, Locandina>
+    private Map<String, Tessera> elencoTessere;
+    private Tessera tesseraCorrente, tesseraSelezionata;
     
     /**
      * Singleton
@@ -39,6 +44,7 @@ public class ParadoxEntertainment {
         this.c = Cinema.getInstance();
         this.elencoPellicole = new HashMap();
         this.elencoLocandine = new HashMap();
+        this.elencoTessere = new HashMap();
     }
     
     public void menuLogin() throws IOException {
@@ -56,12 +62,7 @@ public class ParadoxEntertainment {
                 break;
             
             case 2:
-                System.out.println("Benenuto Addetto");
-                /*
-                codice Addetto
-                */
-                System.out.println("Eseguo... \n.\n.\n.");
-                System.out.println("Termino codice addetto, logout...\n\n");
+                menuAddetto();
                 break;
             
             default:
@@ -119,6 +120,37 @@ public class ParadoxEntertainment {
                 menuLogin();
         }
         menuAmministratore();
+    }
+    
+    public void menuAddetto() throws IOException{ 
+        int scelta;
+        
+        System.out.println("\nMenu Addetto \n"
+                + "1. Vendita Biglietto \n"
+                + "2. Creazione Tessera \n"
+                + "3. Gestisci Tessera \n"
+                + "Altro. Torna al Login");
+        
+        scelta = Integer.parseInt(bf.readLine());
+        
+        switch (scelta) {
+            case 1: 
+                System.out.println("Non ancora implementata...");
+                break;
+            
+            case 2:
+                inserisciTessera();
+                break;
+                
+            case 3:
+                gestisciTessere();
+                break;
+                
+            default:
+                System.out.println("Logout \n\n");
+                menuLogin();
+        }
+        menuAddetto();
     }
             
     public void inserisciSala() throws IOException {
@@ -277,7 +309,12 @@ public class ParadoxEntertainment {
             System.out.println("Pellicola selezionata: " + pellicolaSelezionata.getNomePellicola() + ", durata: " + pellicolaSelezionata.getDurata() + " minuti");
        
         // Seleziona Sala in cui proiettare, restutisce salaSelezionata (selezionaSalaPerProiezione)
-        c.inserisciProiezione(pellicolaSelezionata);
+        if(c.inserisciProiezione(pellicolaSelezionata))
+            confermaProiezione();
+    }
+    
+    public void confermaProiezione() {
+        c.confermaProiezione();
     }
     
     public void stampaSale() {
@@ -383,6 +420,101 @@ public class ParadoxEntertainment {
                 menuAmministratore();
         }
         gestisciProiezioni();
+    }
+    
+    public void inserisciTessera() throws IOException {
+        String nome, cognome, codiceFiscale;
+        LocalDate dataDiNascita;
+        
+        System.out.println("\nInserisci il nome del cliente");
+        nome = bf.readLine();
+        
+        System.out.println("Inserisci il cognome del cliente");
+        cognome = bf.readLine();
+        
+        System.out.println("Inserisci la data di nascita del cliente nel formato 'gg/mm/aaaa'");
+        
+        try {
+            dataDiNascita = LocalDate.parse(bf.readLine(), DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+            if( LocalDate.from(dataDiNascita).until(LocalDate.now(), ChronoUnit.YEARS) < 18) {
+                System.out.println("Errore: il cliente è minorenne e non può quindi sottoscrivere una tessera\n");
+                return;
+            }
+        } catch(DateTimeParseException ex) {
+            System.out.println("Inserimento della data di nascita errato: inserire nel formato 'gg/mm/aaaa'");
+            return;
+        }
+            
+        do {
+            System.out.println("Inserisci il codice fiscale del cliente");
+            codiceFiscale = bf.readLine();
+        } while((verificaTessera(codiceFiscale) == true));
+        
+        System.out.println("\nRiepilogo:"
+                + "\n - Nome: " + nome 
+                + "\n - Cognome: " + cognome 
+                + "\n - Data di Nascita: " + dataDiNascita.format( DateTimeFormatter.ofPattern("dd/MM/yyyy"))
+                + "\n - Codice fiscale: " + codiceFiscale
+                + "\nPremere 1 per confermare, 0 per annullare l'inserimento"); 
+        
+        if(Integer.parseInt(bf.readLine()) == 0) {
+            System.out.println("Inserimento annullato\n");
+            return;
+        }
+        
+        tesseraCorrente = new Tessera(nome, cognome, dataDiNascita, codiceFiscale);
+        confermaTessera();
+    }
+    
+    public void confermaTessera() {
+        elencoTessere.put(tesseraCorrente.getCodiceFiscale(), tesseraCorrente);
+        System.out.println("\nInserimento della tessera completato con successo");
+    }
+    
+    public boolean verificaTessera(String codiceFiscale) {
+        if(elencoTessere.containsKey(codiceFiscale)) {
+            System.out.println("Esiste già una tessera con il codice fiscale inserito\n");
+            return true;
+        } else return false;
+    }
+    
+    public void stampaTessere() {
+        int i=0;
+        if(elencoTessere.isEmpty()) 
+            System.out.println("Non esistono tessere nel sistema\n");
+        else 
+            for(Map.Entry<String, Tessera> set : elencoTessere.entrySet()) 
+                System.out.println("\nTessera " + ++i + "\n" + set.getValue().toString());
+    }
+    
+    public void gestisciTessere() throws IOException {
+        int scelta;
+        
+        System.out.println("\nGestione Tessere\n"
+                + "1. Visualizza Tessere \n"
+                + "2. Modifica Tessera \n"
+                + "3. Elimina Tessera\n"
+                + "Altro. Torna al menu");
+        
+        scelta = Integer.parseInt(bf.readLine());
+        
+        switch (scelta) {
+            case 1: 
+                stampaTessere();
+                break;
+            
+            case 2:
+                System.out.println("Non ancora implementata...\n");
+                break;
+                
+            case 3:
+                System.out.println("Non ancora implementata...\n");
+                break;
+                
+            default:
+                menuAddetto();
+        }
+        gestisciTessere();
     }
     
     public static String getInputPath(String s) {
