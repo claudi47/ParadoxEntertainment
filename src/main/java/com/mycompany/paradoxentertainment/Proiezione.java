@@ -13,6 +13,7 @@ public class Proiezione {
     private int postiRimanentiTot;
     private int postiRimanentiStandard;
     private int postiRimanentiVIP;
+    private Biglietto bigliettoCorrente, bigliettoSelezionato;
 
     public Proiezione(int idProiezione, Sala sala, Pellicola pellicola, LocalTime orario) {
         this.idProiezione = idProiezione;
@@ -51,15 +52,36 @@ public class Proiezione {
     public int getPostiRimanentiVIP() {
         return postiRimanentiVIP;
     }
+    
+    public int creaBiglietto(boolean isVIP, boolean isCategoriaProtetta) {
+        return 0;
+    }
 
     @Override
     public String toString() {
         return "Proiezione ID: " + idProiezione + 
-                "\n - Sala: " + sala.getNomeSala() + 
                 "\n - Pellicola: " + pellicola.getNomePellicola() + 
                 "\n - Orario: " + orario + 
                 "\n - Posti totali rimanenti: " + postiRimanentiTot + 
                 "\n - Posti standard rimanenti: " + postiRimanentiStandard + 
                 "\n - Posti VIP rimanenti: " + postiRimanentiVIP;
+    }
+    
+    public String stampaProiezioneConSala() {
+        return "Proiezione ID: " + idProiezione + 
+                "\n - Pellicola: " + pellicola.getNomePellicola() + 
+                "\n - Sala: " + sala.getNomeSala() + 
+                "\n - Orario: " + orario + 
+                "\n - Posti totali rimanenti: " + postiRimanentiTot + 
+                "\n - Posti standard rimanenti: " + postiRimanentiStandard + 
+                "\n - Posti VIP rimanenti: " + postiRimanentiVIP;
+    }
+    
+    public String stampaElenco() {
+        return " - " + orario + 
+                ", Pellicola: " + pellicola.getNomePellicola() + 
+                ", Durata: " + pellicola.getDurata() +
+                ", Posti standard: " + postiRimanentiStandard + 
+                ", Posti VIP: " + postiRimanentiVIP;
     }
 }
