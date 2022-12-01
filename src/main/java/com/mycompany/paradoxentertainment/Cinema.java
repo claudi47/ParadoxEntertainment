@@ -22,6 +22,7 @@ public class Cinema {
     private Map<String, Sala> elencoSale;
     private Map<String, List<Proiezione>>elencoProiezioni; // <IdSala, elencoProiezioniQuellaSala[]>
     BufferedReader bf = new BufferedReader(new InputStreamReader(System.in));
+    int idProiezione = 0;
     
     public static Cinema getInstance() {
         if (cinema == null)
@@ -65,8 +66,20 @@ public class Cinema {
         return elencoSale.isEmpty();
     }
     
+    public boolean isElencoProiezioniEmpty() {
+        return elencoProiezioni.isEmpty();
+    }
+    
     public Sala getSala(String idSala) {
         return elencoSale.get(idSala);
+    }
+    
+    public Proiezione getProiezione(int idProiezione) {
+        for(Map.Entry<String, List<Proiezione>> proiezioniSala : elencoProiezioni.entrySet())
+            for(Proiezione P: proiezioniSala.getValue()) 
+                if(P.getIdProiezione() == idProiezione)
+                    return P;
+        return null;
     }
 
     public boolean inserisciProiezione(Pellicola p) throws IOException {
@@ -77,7 +90,16 @@ public class Cinema {
         stampaSale();
         salaSelezionata = getSala(bf.readLine());
         
-        System.out.println("\nSala selezionata: sala " + salaSelezionata.getNomeSala());
+        if(salaSelezionata == null) {
+            System.out.println("\nErrore: la sala inserita non esiste\n");
+            return false;
+        }
+        
+        System.out.println("\nSala selezionata: " + salaSelezionata.getNomeSala());
+        if(elencoProiezioni.containsKey(salaSelezionata.getNomeSala())) {
+            System.out.println("\nSpettacoli già in programma in Sala " + salaSelezionata.getNomeSala());
+            stampaProiezioniSala(elencoProiezioni.get(salaSelezionata.getNomeSala()));
+        }
         
         // Inserimento orario dello spettacolo
         System.out.println("\nInserisci l'orario nel formato 'ora:minuti'");
@@ -129,10 +151,29 @@ public class Cinema {
         }
         
         if(!elencoProiezioni.containsKey(salaSelezionata.getNomeSala()))
-            elencoProiezioni.put(salaCorrente.getNomeSala(), new ArrayList());
+            elencoProiezioni.put(salaSelezionata.getNomeSala(), new ArrayList());
         
-        proiezioneCorrente = new Proiezione(elencoProiezioni.get(salaSelezionata.getNomeSala()).size()+1, salaSelezionata, p, orario);
+        proiezioneCorrente = new Proiezione(++idProiezione, salaSelezionata, p, orario);
+        
         return true;
+    }
+    
+    public int eliminaProiezioniPerPellicola(int idPellicola) {
+        int numeroProiezioniEliminate = 0;
+        List<Proiezione> proiezioniDaRimuovere = new ArrayList();
+        
+        for(Map.Entry<String, List<Proiezione>> proiezioniSala : elencoProiezioni.entrySet()) {
+            for(Proiezione P: proiezioniSala.getValue()) {
+                if(P.getPellicola().getIdPellicola() == idPellicola) {
+                    numeroProiezioniEliminate++;
+                    System.out.println("\n" + P.stampaProiezioneConSala());
+                    proiezioniDaRimuovere.add(P);
+                }
+            }
+            proiezioniSala.getValue().removeAll(proiezioniDaRimuovere);
+        }
+        
+        return numeroProiezioniEliminate;
     }
     
     public void confermaProiezione() {
@@ -140,15 +181,17 @@ public class Cinema {
         System.out.println("Inserimento della proiezione completato con successo");
     }
     
-    
+    //eventualmente vedi se modifichi e fai in modo che stampaProiezioniSala diventi 
+    // stampaProiezioniPERSala e che riceva in ingresso un id e poi stampi la lista
     public void stampaProgrammazione() {
         if(elencoProiezioni.isEmpty()) 
             System.out.println("Non esistono proiezioni\n");
         else 
             for(Map.Entry<String, List<Proiezione>> proiezioniSala : elencoProiezioni.entrySet()) {
-                System.out.println("\nSala " + proiezioniSala.getKey());
-                stampaProiezioniSala(proiezioniSala.getValue());
-                //System.out.println("Sala " + elencoProiezioni.get(proiezioniSala.getKey()).toString());
+                if(!proiezioniSala.getValue().isEmpty()) {
+                    System.out.println("\nSala " + proiezioniSala.getKey());
+                    stampaProiezioniSala(proiezioniSala.getValue());
+                }
             }
     }
     
@@ -158,4 +201,125 @@ public class Cinema {
                 System.out.println("\n" + P.toString());
         }
     }
+    
+    public int proiezioniPerDataPellicola(int idPellicola) throws IOException {
+        int numeroProiezioniPerPellicola = 0;
+        
+        for(Map.Entry<String, List<Proiezione>> proiezioniSala : elencoProiezioni.entrySet()) {
+            for(Proiezione P: proiezioniSala.getValue()) {
+                if(P.getPellicola().getIdPellicola() == idPellicola) {
+                    numeroProiezioniPerPellicola++;
+                    System.out.println("\n" + P.stampaProiezioneConSala());
+                }
+            }
+        }
+        return numeroProiezioniPerPellicola;
+    }
+    
+    public boolean acquistaBiglietto(int idPellicola) throws IOException {
+        if(proiezioniPerDataPellicola(idPellicola) == 0) {
+            System.out.println("Non esistono proiezioni per la pellicola selezionata\n");
+            return false;
+        } else
+            return true;
+    }
+    
+    public boolean scegliProiezione(int idProiezione) {
+        if((proiezioneSelezionata = getProiezione(idProiezione)) != null) {
+            if(proiezioneSelezionata.getPostiRimanentiTot() > 0) {
+                System.out.println("\n Proiezione Selezionata: \n" + proiezioneSelezionata);
+                return true;
+            } else {
+                System.out.println("Non sono più disponibili posti per la proiezione selezionata\n");
+                return false;
+            }
+        }
+        System.out.println("La proiezione selezionata non esiste\n");
+        return false;
+    }
+    
+    public int effettuaAcquisto(boolean isVIP, boolean isCategoriaProtetta) {
+        int costoBiglietto;
+        
+        if(isVIP)
+            if(proiezioneSelezionata.getPostiRimanentiVIP() == 0) {
+                System.out.println("Non sono più disponibili posti VIP per la proiezione selezionata\n");
+                return -1;
+            }
+        costoBiglietto = proiezioneSelezionata.creaBiglietto(isVIP, isCategoriaProtetta);
+        return costoBiglietto;
+    }
+    
+    /*
+    public void stampaProiezioniSalaAdElenco(String nomeSala) {
+        if(elencoProiezioni.containsKey(nomeSala)) {
+            for()
+            if(!proiezioni.isEmpty()) {
+                for(Proiezione P: proiezioni)
+                    System.out.println("\n" + P.stampaElenco());
+            }
+        }
+    }
+   
+    
+    public boolean isPellicolaProiettata(int idPellicola) {
+        for(Map.Entry<String, List<Proiezione>> proiezioniSala : elencoProiezioni.entrySet()) {
+            for(Proiezione P: proiezioniSala.getValue()) {
+                if(P.getPellicola().getIdPellicola() == idPellicola)
+                    return true;
+            }
+        }
+        return false;
+    }
+
+    
+    
+    public Proiezione scegliProiezione(int idProiezione) {
+        for(Map.Entry<String, List<Proiezione>> proiezioniSala : elencoProiezioni.entrySet()) {
+                for(Proiezione P: proiezioniSala.getValue()) {
+                    if(P.getIdProiezione() == idProiezione)
+                        return P;
+                }
+            }
+        return null;
+    }
+    
+    public boolean haPostiVIP(int idProiezione) {
+        for(Map.Entry<String, List<Proiezione>> proiezioniSala : elencoProiezioni.entrySet()) {
+            for(Proiezione P: proiezioniSala.getValue()) 
+                if(P.getPostiRimanentiVIP() > 0)
+                    return true; 
+        } 
+        return false;
+    }    
+    
+    public boolean verificaProiezioneDaVisionare(int idProiezione, int idPellicola) {
+        if(elencoProiezioni.isEmpty()) 
+            return false;
+        else {
+            for(Map.Entry<String, List<Proiezione>> proiezioniSala : elencoProiezioni.entrySet()) {
+                for(Proiezione P: proiezioniSala.getValue()) {
+                    if(P.getIdProiezione() == idProiezione) {
+                        if(P.getPellicola().getIdPellicola() == idPellicola) {
+                            //spettacolo è stato trovato correttamente
+                            if(P.getPostiRimanentiStandard() > 0)
+                                return true;
+                            else {
+                                System.out.println("\nI posti per lo spettacolo sono esauriti\n");
+                                return false; 
+                            }
+                        } else {
+                            //trovato lo spettacolo inserito ma non è del film che ha scelto
+                            System.out.println("\nErrore: la proiezione scelta non è valida, essendo relativa ad un'altra pellicola\n");
+                            return false;
+                        }
+                    }
+                }
+            }
+            //ho esplorato ogni proiezione ma nessuna di queste ha l'ID inserito dall'addetto
+            System.out.println("\nErrore: la proiezione scelta non esiste nel sistema\n");
+            return false;
+        }
+    }
+    */
 }

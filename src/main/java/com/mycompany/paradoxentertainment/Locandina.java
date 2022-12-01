@@ -19,10 +19,10 @@ public class Locandina {
 
     @Override
     public String toString() {
-        return " - Locandina della pellicola n°" + pellicola + ":"
-                + "\n\t - Percorso: " + path
-                + "\n\t - Dimensione base: " + baseStampa 
-                + "\n\t - Dimensione altezza: " + altezzaStampa;
+        return "Locandina della pellicola n°" + pellicola + ":"
+                + "\n - Percorso: " + path
+                + "\n - Dimensione base: " + baseStampa 
+                + "\n - Dimensione altezza: " + altezzaStampa;
     } 
 
     public int getPellicola() {

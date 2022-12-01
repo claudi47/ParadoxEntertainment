@@ -45,6 +45,34 @@ public class Pellicola {
         this.idPellicola = idPellicola;
     }
 
+    public void setNomePellicola(String nomePellicola) {
+        this.nomePellicola = nomePellicola;
+    }
+
+    public void setRegista(String regista) {
+        this.regista = regista;
+    }
+
+    public void setAnno(int anno) {
+        this.anno = anno;
+    }
+
+    public void setGenere(String genere) {
+        this.genere = genere;
+    }
+
+    public void setDurata(int durata) {
+        this.durata = durata;
+    }
+    
+    public void modificaPellicola(String titolo, String regista, int anno, String genere, int durata) {
+        this.setNomePellicola(titolo);
+        this.setRegista(regista);
+        this.setAnno(anno);
+        this.setGenere(genere);
+        this.setDurata(durata);
+    }
+
     @Override
     public String toString() {
         return nomePellicola + 
