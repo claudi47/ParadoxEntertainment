@@ -158,6 +158,24 @@ public class Cinema {
         return true;
     }
     
+    public int eliminaProiezioniPerPellicola(int idPellicola) {
+        int numeroProiezioniEliminate = 0;
+        List<Proiezione> proiezioniDaRimuovere = new ArrayList();
+        
+        for(Map.Entry<String, List<Proiezione>> proiezioniSala : elencoProiezioni.entrySet()) {
+            for(Proiezione P: proiezioniSala.getValue()) {
+                if(P.getPellicola().getIdPellicola() == idPellicola) {
+                    numeroProiezioniEliminate++;
+                    System.out.println("\n" + P.stampaProiezioneConSala());
+                    proiezioniDaRimuovere.add(P);
+                }
+            }
+            proiezioniSala.getValue().removeAll(proiezioniDaRimuovere);
+        }
+        
+        return numeroProiezioniEliminate;
+    }
+    
     public void confermaProiezione() {
         elencoProiezioni.get(salaSelezionata.getNomeSala()).add(proiezioneCorrente);
         System.out.println("Inserimento della proiezione completato con successo");
@@ -170,8 +188,10 @@ public class Cinema {
             System.out.println("Non esistono proiezioni\n");
         else 
             for(Map.Entry<String, List<Proiezione>> proiezioniSala : elencoProiezioni.entrySet()) {
-                System.out.println("\nSala " + proiezioniSala.getKey());
-                stampaProiezioniSala(proiezioniSala.getValue());
+                if(!proiezioniSala.getValue().isEmpty()) {
+                    System.out.println("\nSala " + proiezioniSala.getKey());
+                    stampaProiezioniSala(proiezioniSala.getValue());
+                }
             }
     }
     
@@ -207,7 +227,7 @@ public class Cinema {
     public boolean scegliProiezione(int idProiezione) {
         if((proiezioneSelezionata = getProiezione(idProiezione)) != null) {
             if(proiezioneSelezionata.getPostiRimanentiTot() > 0) {
-                System.out.println("Proiezione Selezionata: \n" + proiezioneSelezionata);
+                System.out.println("\n Proiezione Selezionata: \n" + proiezioneSelezionata);
                 return true;
             } else {
                 System.out.println("Non sono più disponibili posti per la proiezione selezionata\n");
@@ -222,7 +242,7 @@ public class Cinema {
         int costoBiglietto;
         
         if(isVIP)
-            if(proiezioneSelezionata.getPostiRimanentiVIP() < 0) {
+            if(proiezioneSelezionata.getPostiRimanentiVIP() == 0) {
                 System.out.println("Non sono più disponibili posti VIP per la proiezione selezionata\n");
                 return -1;
             }

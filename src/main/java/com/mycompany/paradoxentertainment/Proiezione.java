@@ -56,16 +56,6 @@ public class Proiezione {
     public int creaBiglietto(boolean isVIP, boolean isCategoriaProtetta) {
         return 0;
     }
-
-    @Override
-    public String toString() {
-        return "Proiezione ID: " + idProiezione + 
-                "\n - Pellicola: " + pellicola.getNomePellicola() + 
-                "\n - Orario: " + orario + 
-                "\n - Posti totali rimanenti: " + postiRimanentiTot + 
-                "\n - Posti standard rimanenti: " + postiRimanentiStandard + 
-                "\n - Posti VIP rimanenti: " + postiRimanentiVIP;
-    }
     
     public String stampaProiezioneConSala() {
         return "Proiezione ID: " + idProiezione + 
@@ -83,5 +73,15 @@ public class Proiezione {
                 ", Durata: " + pellicola.getDurata() +
                 ", Posti standard: " + postiRimanentiStandard + 
                 ", Posti VIP: " + postiRimanentiVIP;
+    }
+    
+    @Override
+    public String toString() {
+        return "Proiezione ID: " + idProiezione + 
+                "\n - Pellicola: " + pellicola.getNomePellicola() + 
+                "\n - Orario: " + orario + 
+                "\n - Posti totali rimanenti: " + postiRimanentiTot + 
+                "\n - Posti standard rimanenti: " + postiRimanentiStandard + 
+                "\n - Posti VIP rimanenti: " + postiRimanentiVIP;
     }
 }

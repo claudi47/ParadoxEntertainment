@@ -26,6 +26,7 @@ public class ParadoxEntertainment {
     private Map<Integer, Pellicola> elencoPellicole;  //<IdPellicola, Pellicola>
     private Pellicola pellicolaCorrente, pellicolaSelezionata;
     private Map<Integer, Locandina> elencoLocandine; // <IdPellicola, Locandina>
+    private Locandina locandinaCorrente, locandinaSelezionata;
     private Map<String, Tessera> elencoTessere;
     private Tessera tesseraCorrente, tesseraSelezionata;
     
@@ -47,6 +48,7 @@ public class ParadoxEntertainment {
         this.elencoTessere = new HashMap();
     }
     
+    // MENU 
     public void menuLogin() throws IOException {
         int scelta;
         
@@ -90,6 +92,7 @@ public class ParadoxEntertainment {
                 + "4. Gestisci Sale\n"
                 + "5. Gestisci Pellicole\n"
                 + "6. Gestisci Proiezioni\n"
+                + "7. Stampa locandine\n"
                 + "Altro. Torna al Login");
         
         scelta = Integer.parseInt(bf.readLine());
@@ -126,6 +129,13 @@ public class ParadoxEntertainment {
                     System.out.println("\nNon esistono proiezioni");
                 else 
                     gestisciProiezioni();
+                break;
+            
+            case 7:
+                if(elencoLocandine.isEmpty())
+                    System.out.println("\nNon esistono locandine");
+                else
+                    stampaLocandine();
                 break;
                 
             default:
@@ -171,7 +181,8 @@ public class ParadoxEntertainment {
         }
         menuAddetto();
     }
-            
+    
+    // SALE
     public void inserisciSala() throws IOException {
         String nomeSala;
         int postiStandard;
@@ -218,6 +229,43 @@ public class ParadoxEntertainment {
         c.confermaSala();
     }
     
+    public void gestisciSale() throws IOException {
+        int scelta;
+        
+        System.out.println("\nGestione Sale\n"
+                + "1. Visualizza Sale \n"
+                + "2. Modifica Sala \n"
+                + "3. Elimina Sala\n"
+                + "Altro. Torna al menu");
+        
+        scelta = Integer.parseInt(bf.readLine());
+        
+        switch (scelta) {
+            case 1: //UC1 Inserimento Sala
+                stampaSale();
+                break;
+            
+            case 2:
+                System.out.println("Non ancora implementata...\n");
+                break;
+                
+            case 3:
+                System.out.println("Non ancora implementata...\n");
+                break;
+                
+            default:
+                menuAmministratore();
+        }
+        if(c.isElencoSaleEmpty()) 
+            return;
+        gestisciSale();
+    }
+    
+    public void stampaSale() {
+        c.stampaSale();
+    }
+    
+    // PELLICOLE
     public void inserisciPellicola() throws IOException {
         String nomePellicola;
         String regista;
@@ -228,7 +276,6 @@ public class ParadoxEntertainment {
         String path = null;
         int baseStampa = 0, altezzaStampa = 0;
         boolean isLocandina = false;
-        Locandina locandina = null;
                
         do {
             System.out.println("\nInserisci il titolo della pellicola");
@@ -283,21 +330,31 @@ public class ParadoxEntertainment {
         System.out.println("\nInserimento della Pellicola completato con successo\n");
         
         if(isLocandina) {
-            locandina = pellicolaCorrente.inserisciLocandina(path, baseStampa, altezzaStampa);
-            elencoLocandine.put(locandina.getPellicola(), locandina);
-            System.out.println(elencoLocandine.get(locandina.getPellicola()));
+            locandinaCorrente = pellicolaCorrente.inserisciLocandina(path, baseStampa, altezzaStampa);
+            elencoLocandine.put(locandinaCorrente.getPellicola(), locandinaCorrente);
+            System.out.println("Inserimento della Locandina completato con successo\n");
         }
     }
     
     public boolean verificaPellicola(String nomePellicola, String regista, int anno) {
+        // a tempo perso vedi se riesci ad evitare la ripetizione delle 3 condizioni e il doppio return true
         for (HashMap.Entry<Integer, Pellicola> entry : elencoPellicole.entrySet()) {
-            if(entry.getValue().getNomePellicola().equals(nomePellicola) &&
-                    entry.getValue().getRegista().equals(regista) &&
+            if(pellicolaSelezionata == null) {
+                if(entry.getValue().getNomePellicola().equals(nomePellicola) && 
+                        entry.getValue().getRegista().equals(regista) && 
                         entry.getValue().getAnno() == anno) {
-                System.out.println("\nErrore: pellicola già presente nel sistema");
-                return true;         
+                    System.out.println("\nErrore: pellicola già presente nel sistema");
+                    return true;   
+                }
             }
-        } 
+            if(entry.getValue().getNomePellicola().equals(nomePellicola) &&
+                    entry.getValue().getRegista().equals(regista) && 
+                    entry.getValue().getAnno() == anno && 
+                    entry.getValue().getIdPellicola() != pellicolaSelezionata.getIdPellicola()) {
+                System.out.println("\nErrore: pellicola già presente nel sistema");
+                return true; 
+            }
+        }
         return false;
     }
             
@@ -305,74 +362,7 @@ public class ParadoxEntertainment {
         elencoPellicole.put(pellicolaCorrente.getIdPellicola(), pellicolaCorrente);
     }
     
-    public void inserisciProiezione() throws IOException {
-        int idPellicola;
-        
-        // Verifica che esista almeno una Sala e una Pellicola prima di inserire una Proiezione
-        if(elencoPellicole.isEmpty() || c.isElencoSaleEmpty()) {
-            System.out.println("\nErrore: non sono presenti sale o pellicole nel sistema, necessarie per creare uno spettacolo");
-            return;
-        }
-        
-        System.out.println("\nInserisci il titolo o una parte del film da proiettare per filtrare la ricerca "
-                + "altrimenti premi Invio per stamparli tutti");
-        stampaPellicolePerTitolo(bf.readLine());
-        
-        System.out.println("\nInserire l'ID della pellicola da proiettare");
-        idPellicola = Integer.parseInt(bf.readLine());
-        
-        if((pellicolaSelezionata = elencoPellicole.get(idPellicola)) == null) {
-            System.out.println("\nErrore: selezione non valida");
-            return;
-        } else
-            System.out.println("Pellicola selezionata: " + pellicolaSelezionata.getNomePellicola() + ", durata: " + pellicolaSelezionata.getDurata() + " minuti");
-       
-        // Seleziona Sala in cui proiettare, restutisce salaSelezionata (selezionaSalaPerProiezione)
-        if(c.inserisciProiezione(pellicolaSelezionata))
-            confermaProiezione();
-    }
-    
-    public void confermaProiezione() {
-        c.confermaProiezione();
-    }
-    
-    public void stampaSale() {
-        c.stampaSale();
-    }
-    
-    public void gestisciSale() throws IOException {
-        int scelta;
-        
-        System.out.println("\nGestione Sale\n"
-                + "1. Visualizza Sale \n"
-                + "2. Modifica Sala \n"
-                + "3. Elimina Sala\n"
-                + "Altro. Torna al menu");
-        
-        scelta = Integer.parseInt(bf.readLine());
-        
-        switch (scelta) {
-            case 1: //UC1 Inserimento Sala
-                stampaSale();
-                break;
-            
-            case 2:
-                System.out.println("Non ancora implementata...\n");
-                break;
-                
-            case 3:
-                System.out.println("Non ancora implementata...\n");
-                break;
-                
-            default:
-                menuAmministratore();
-        }
-        gestisciSale();
-    }
-    
     public void stampaPellicole() {
-        if(elencoPellicole.isEmpty()) 
-            System.out.println("Non esistono pellicole\n");
         for(Map.Entry<Integer, Pellicola> set : elencoPellicole.entrySet()) 
             System.out.println("\n" + set.getValue().toString());
     }
@@ -405,22 +395,140 @@ public class ParadoxEntertainment {
         scelta = Integer.parseInt(bf.readLine());
         
         switch (scelta) {
-            case 1: //UC1 Inserimento Sala
+            case 1: 
                 stampaPellicole();
                 break;
             
             case 2:
-                System.out.println("Non ancora implementata...\n");
+                modificaPellicola();
                 break;
                 
             case 3:
-                System.out.println("Non ancora implementata...\n");
+                eliminaPellicola();
                 break;
                 
             default:
                 menuAmministratore();
         }
+        if(elencoPellicole.isEmpty()) 
+            return;
         gestisciPellicole();
+    }
+    
+    public void modificaPellicola() throws IOException {
+        int idPellicola;
+        String titolo, regista, genere;
+        int durata, anno;
+        boolean variazioneDurata;
+        
+        // selezione pellicola (uguale in InserisciProiezione, creare un metodo selezionePellicola() ? )
+        stampaPellicole();
+        System.out.println("\nInserire l'ID della pellicola da modificare");
+        idPellicola = Integer.parseInt(bf.readLine());
+        
+        if((pellicolaSelezionata = elencoPellicole.get(idPellicola)) == null) {
+            System.out.println("\nErrore: selezione non valida");
+            return;
+        } else
+            System.out.println("Pellicola selezionata: " + pellicolaSelezionata.getNomePellicola() + ", durata: " + pellicolaSelezionata.getDurata() + " minuti");
+       
+        // inserimento dati della pellicola (uguale in inserisciPellicola, creare un metodo creaPellicola()? )
+        do {
+            System.out.println("\nInserisci il titolo della pellicola");
+            titolo = bf.readLine();
+            
+            System.out.println("Inserisci il nome del regista");
+            regista = bf.readLine();
+        
+            System.out.println("Inserisci l'anno di uscita");
+            anno = Integer.parseInt(bf.readLine());
+        } while((verificaPellicola(titolo, regista, anno) == true)); //
+        
+        System.out.println("Inserisci il genere della pellicola");
+        genere = bf.readLine();
+        
+        System.out.println("Inserisci la durata in minuti");
+        durata = Integer.parseInt(bf.readLine());
+        variazioneDurata = (durata > pellicolaSelezionata.getDurata());
+        
+        System.out.println("\nLa nuova pellicola è: " 
+                + "\n - Titolo: " + titolo
+                + "\n - Regista: " + regista
+                + "\n - Anno: " + anno
+                + "\n - Genere: " + genere
+                + "\n - Durata: " + durata
+                + "\nConfermare? 1. Si, 0. No");
+        if(bf.readLine().equals("1")) {
+            pellicolaSelezionata.modificaPellicola(titolo, regista, anno, genere, durata);
+            System.out.println("Modifica effettuata con successo\n");
+            if(variazioneDurata && c.proiezioniPerDataPellicola(idPellicola) > 0) {
+                System.out.println("\nPoiché la pellicola ha subito un aumento della durata, le seguenti proiezioni sono state eliminate:");
+                c.eliminaProiezioniPerPellicola(pellicolaSelezionata.getIdPellicola());
+            }
+        } else 
+            System.out.println("Modifica annullata\n");
+    }
+    
+    public void eliminaPellicola() throws IOException {
+        int idPellicola;
+        
+        stampaPellicole();
+        System.out.println("\nInserisci l'ID della pellicola da eliminare");
+        idPellicola = Integer.parseInt(bf.readLine());
+        pellicolaSelezionata = elencoPellicole.get(idPellicola);
+        
+        if(pellicolaSelezionata != null) {
+            System.out.println("\nPellicola: " + pellicolaSelezionata.getNomePellicola() + " eliminata correttamente");
+            if(elencoLocandine.containsKey(idPellicola)) 
+                eliminaLocandina(idPellicola);
+            if(c.proiezioniPerDataPellicola(idPellicola) > 0) {
+                System.out.println("\nLe seguenti proiezioni della pellicola eliminata, sono state anch'esse eliminate:");
+                c.eliminaProiezioniPerPellicola(idPellicola);
+            }
+            pellicolaSelezionata = elencoPellicole.remove(idPellicola);
+        } else
+            System.out.println("Scelta non valida: pellicola inesistente nel sistema\n");
+    }
+    
+    // PROIEZIONI
+    public void inserisciProiezione() throws IOException {
+        int idPellicola;
+        
+        // Verifica che esista almeno una Sala e una Pellicola prima di inserire una Proiezione
+        if(elencoPellicole.isEmpty() || c.isElencoSaleEmpty()) {
+            System.out.println("\nErrore: non sono presenti sale o pellicole nel sistema, necessarie per creare uno spettacolo");
+            return;
+        }
+        
+        stampaPellicole();
+        System.out.println("\nInserire l'ID della pellicola da proiettare");
+        idPellicola = Integer.parseInt(bf.readLine());
+        
+        if((pellicolaSelezionata = elencoPellicole.get(idPellicola)) == null) {
+            System.out.println("\nErrore: selezione non valida");
+            return;
+        } else
+            System.out.println("Pellicola selezionata: " + pellicolaSelezionata.getNomePellicola() + ", durata: " + pellicolaSelezionata.getDurata() + " minuti");
+       
+        // Seleziona Sala in cui proiettare, restutisce salaSelezionata (selezionaSalaPerProiezione)
+        if(c.inserisciProiezione(pellicolaSelezionata))
+            confermaProiezione();
+    }
+    
+    public void confermaProiezione() {
+        c.confermaProiezione();
+    }
+    
+    public void stampaLocandine() {
+        for(Map.Entry<Integer, Locandina> entryLocandina : elencoLocandine.entrySet()) 
+            System.out.println("\n" + entryLocandina.getValue().toString());
+    }
+    
+    public void eliminaLocandina(int idPellicola) {
+        locandinaSelezionata = elencoLocandine.remove(idPellicola);
+        
+        if(locandinaSelezionata != null)
+            System.out.println("Locandina di " + elencoPellicole.get(idPellicola).getNomePellicola() + " eliminata correttamente");    
     }
     
     public void stampaProgrammazione() {
@@ -454,9 +562,12 @@ public class ParadoxEntertainment {
             default:
                 menuAmministratore();
         }
+        if(c.isElencoProiezioniEmpty()) 
+            return;
         gestisciProiezioni();
     }
     
+    // TESSERE
     public void inserisciTessera() throws IOException {
         String nome, cognome, codiceFiscale;
         LocalDate dataDiNascita;
@@ -549,9 +660,12 @@ public class ParadoxEntertainment {
             default:
                 menuAddetto();
         }
+        if(elencoTessere.isEmpty())
+            return;
         gestisciTessere();
     }
     
+    // VENDITA BIGLIETTO
     public void acquistaBiglietto() throws IOException {
         int idPellicola, idProiezione;
         
@@ -567,7 +681,7 @@ public class ParadoxEntertainment {
         
         //se esistono proiezioni per quella pellicola
         if(c.acquistaBiglietto(idPellicola)) { 
-            System.out.println("Scegli lo spettacolo per " + elencoPellicole.get(idPellicola).getNomePellicola() + "\n");
+            System.out.println("\nScegli l'ID dello spettacolo");
             idProiezione = Integer.parseInt(bf.readLine());
             scegliProiezione(idProiezione);
         } else { //non esistono proiezioni per quella pellicola
@@ -577,7 +691,7 @@ public class ParadoxEntertainment {
     
     public void scegliProiezione(int idProiezione) throws IOException {
         if(c.scegliProiezione(idProiezione)) {
-            System.out.println("\nPremi 1 per confermare, 0 per uscire\n");
+            System.out.println("\nPremi 1 per confermare, 0 per uscire");
             if(bf.readLine().equals("1")) 
                 effettuaAcquisto();
         }
@@ -586,15 +700,15 @@ public class ParadoxEntertainment {
     public void effettuaAcquisto() throws IOException {
         boolean isVIP, isCategoriaProtetta;
         
-        System.out.println("Poltrona VIP: \n 1. Si \n 2. No");
-        isVIP = Boolean.parseBoolean(bf.readLine());
-        
         // L'addetto specifica se il cliente ha diritto ad un biglietto ridotto
-        System.out.println("Diritto a biglietto ridotto (minore di 12 anni, over-65, invalido): \n 1. Si \n 2. No");
+        System.out.println("\nDiritto a biglietto ridotto (minore di 12 anni, over-65, invalido): \n 1. Si \n 2. No");
         isCategoriaProtetta = Boolean.parseBoolean(bf.readLine());
         
+        System.out.println("\nPoltrona VIP: \n 1. Si \n 2. No");
+        isVIP = Boolean.parseBoolean(bf.readLine());
+        
         if(c.effettuaAcquisto(isVIP, isCategoriaProtetta) > 0) {
-            
+            //il biglietto è stato creato e il prezzo restituito correttamente
         }
     }
     
