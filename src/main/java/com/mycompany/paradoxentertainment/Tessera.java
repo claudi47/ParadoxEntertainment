@@ -13,24 +13,47 @@ public class Tessera {
     private String codiceFiscale;
     private LocalDate dataDiNascita;
     private int punti;
+    private int idTessera;
     
-    public Tessera(String nome, String cognome, LocalDate data, String codiceFiscale) {
+    public Tessera(String nome, String cognome, LocalDate data, String codiceFiscale, int idTessera) {
         this.nomeUtente = nome;
         this.cognomeUtente = cognome;
         this.dataDiNascita = data;
         this.codiceFiscale = codiceFiscale;
         this.punti = 0;
+        this.idTessera = idTessera;
     }
 
     public String getCodiceFiscale() {
         return codiceFiscale;
     }
+
+    public int getIdTessera() {
+        return idTessera;
+    }
+
+    public int getPunti() {
+        return punti;
+    }
+
+    public void setPunti(int punti) {
+        this.punti = punti;
+    }
+    
+    void modificaTessera(String nome, String cognome, LocalDate dataDiNascita, String codiceFiscale) {
+        this.nomeUtente = nome;
+        this.cognomeUtente = cognome;
+        this.dataDiNascita = dataDiNascita;
+        this.codiceFiscale = codiceFiscale;
+    }
     
     @Override
     public String toString() {
-        return " - Nome: " + nomeUtente 
+        return "\nTessera ID: " + idTessera
+                + "\n - Nome: " + nomeUtente 
                 + "\n - Cognome: " + cognomeUtente
-                + "\n - Data di Nascita: " + dataDiNascita.format( DateTimeFormatter.ofPattern("dd/MM/yyyy"))
-                + "\n - Codice Fiscale: " + codiceFiscale;
+                + "\n - Data di Nascita: " + dataDiNascita.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
+                + "\n - Codice Fiscale: " + codiceFiscale
+                + "\n - Punti accumulati: " + punti;
     }
 }

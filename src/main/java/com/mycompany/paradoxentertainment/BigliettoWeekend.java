@@ -1,9 +1,9 @@
 package com.mycompany.paradoxentertainment;
 
-public class BigliettoFeriale extends Biglietto {
-    float prezzoBase = 6.0F;
-    
-    public BigliettoFeriale(boolean isVIP, boolean isCategoriaProtetta, Proiezione proiezione) {
+public class BigliettoWeekend extends Biglietto {
+    float prezzoBase = 8.0F;
+
+    public BigliettoWeekend(boolean isVIP, boolean isCategoriaProtetta, Proiezione proiezione) {
         super(isVIP, isCategoriaProtetta, proiezione);
         this.prezzoTot = prezzoBase;
         if(isVIP)
