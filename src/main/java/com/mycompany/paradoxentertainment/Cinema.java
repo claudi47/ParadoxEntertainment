@@ -24,7 +24,7 @@ public class Cinema {
     private int idSale = 0;
     private Map<Integer, List<Proiezione>>elencoProiezioni; // <IdSala, elencoProiezioniQuellaSala[]>
     BufferedReader bf = new BufferedReader(new InputStreamReader(System.in));
-    int idProiezione = 0;
+    int idProiezioni = 0;
     
     public static Cinema getInstance() {
         if (cinema == null)
@@ -223,7 +223,7 @@ public class Cinema {
             return false;
         }
         
-        proiezioneCorrente = new Proiezione(++idProiezione, salaSelezionata, p, orario);
+        proiezioneCorrente = new Proiezione(++idProiezioni, salaSelezionata, p, orario);
         
         return true;
     }
@@ -310,15 +310,26 @@ public class Cinema {
             System.out.println("\nModifica annullata\n");
     }
     
+    public void stampaProiezione(int idProiezione) {
+        if(elencoProiezioni.containsKey(idProiezione))
+            System.out.println(elencoProiezioni.get(idProiezione).toString());
+        else
+            System.out.println("\nProiezione non esistente\n");
+    }
+    
+    // Restituisce il numero di biglietti venduti data una certa Proiezione
     public int bigliettiVendutiProiezione(Proiezione proiezione) {
         return proiezione.getBigliettiVenduti().size();
     }
     
+    // Restituisce il numero di biglietti venduti dato l'ID di una certa Proiezine
     public int bigliettiVendutiProiezione(int idProiezione) {
         proiezioneSelezionata = getProiezione(idProiezione);
         return bigliettiVendutiProiezione(proiezioneSelezionata);
     }
     
+    // Elimina tutte le proiezioni di una certa Pellicola dato il suo ID, 
+    // restituendo il numero di pellicole eliminate
     public int eliminaProiezioniPerPellicola(int idPellicola) {
         int numeroProiezioniEliminate = 0;
         List<Proiezione> proiezioniDaRimuovere = new ArrayList();
@@ -333,7 +344,6 @@ public class Cinema {
             }
             proiezioniSala.getValue().removeAll(proiezioniDaRimuovere);
         }
-        
         return numeroProiezioniEliminate;
     }
     
@@ -408,6 +418,32 @@ public class Cinema {
         return numeroProiezioni;
     }
     
+    public Proiezione trovaProiezione() throws IOException {
+        String inserimentoProiezione;
+        int idProiezione;
+        
+        if(!elencoProiezioni.isEmpty()) {
+            do {
+                System.out.println("\nInserire l'ID della proiezione o premere Invio per stamparle tutte:");
+                inserimentoProiezione = bf.readLine();
+                if(inserimentoProiezione.equals("")) {
+                    stampaProgrammazione();
+                    System.out.println("\nInserisci l'ID della proiezione: ");
+                    inserimentoProiezione = bf.readLine();
+                }
+
+                idProiezione = Integer.parseInt(inserimentoProiezione);
+                if(getProiezione(idProiezione) != null) 
+                    return getProiezione(idProiezione);
+                else
+                    System.out.println("\nProiezione non trovata: inserire 1 per riprovare, altrimenti per annullare");
+            } while(bf.readLine().equals("1"));
+            return null;
+        }
+        System.out.println("\nNon ci sono Proiezioni nel sistema");
+        return null;
+    }
+    
     // VENDITA BIGLIETTO
     public boolean acquistaBiglietto(int idPellicola) throws IOException {
         // Il cinema stampa le sue proiezioni durante la vendita del biglietto
@@ -437,91 +473,48 @@ public class Cinema {
     public float effettuaAcquisto(boolean isVIP, boolean isCategoriaProtetta) {
         float costoBiglietto;
         
-        if(isVIP) {
-            if(proiezioneSelezionata.getPostiRimanentiVIP() == 0) {
-                System.out.println("Non sono più disponibili posti VIP per la proiezione selezionata\n");
-                return -1;
+        if(proiezioneSelezionata.getPostiRimanentiTot() > 0) {
+            if(isVIP) {
+                if(proiezioneSelezionata.getPostiRimanentiVIP() == 0) {
+                    System.out.println("Non sono più disponibili posti VIP per la proiezione selezionata\n");
+                    return -1;
+                }
+            } else {
+                if(proiezioneSelezionata.getPostiRimanentiStandard()== 0) {
+                    System.out.println("Non sono più disponibili posti standard per la proiezione selezionata\n");
+                    return -1;
+                }
             }
+            costoBiglietto = proiezioneSelezionata.creaBiglietto(isVIP, isCategoriaProtetta);
+            System.out.println("CINEMA: " + costoBiglietto);
+            return costoBiglietto;
+        } else {
+            System.out.println("I posti per la proiezione " + proiezioneSelezionata.getIdProiezione() + " sono tutti terminati\n");
+            return -1;
         }
-        costoBiglietto = proiezioneSelezionata.creaBiglietto(isVIP, isCategoriaProtetta);
-        System.out.println("CINEMA: " + costoBiglietto);
-        return costoBiglietto;
     }
     
     public void confermaAcquisto() {
         proiezioneSelezionata.confermaAcquisto();
     }
     
-    /*
-    public void stampaProiezioniSalaAdElenco(String nomeSala) {
-        if(elencoProiezioni.containsKey(nomeSala)) {
-            for()
-            if(!proiezioni.isEmpty()) {
-                for(Proiezione P: proiezioni)
-                    System.out.println("\n" + P.stampaElenco());
-            }
-        }
+    public boolean effettuaReso() throws IOException {
+        proiezioneSelezionata = trovaProiezione();
+        
+        if(proiezioneSelezionata != null) {
+            System.out.println("\nProiezione selezionata: \n" + proiezioneSelezionata.toString() + 
+                    "\nInserire 1 per confermare e proseguire, altrimenti per selezionare un'altra proiezione");
+            if(!bf.readLine().equals("1"))
+                this.effettuaReso();
+            else 
+                return proiezioneSelezionata.effettuaReso();
+        } else
+            System.out.println("Operazione di rimborso annullata\n");
+        return false;
+    }
+    
+    public float confermaReso() {
+        return proiezioneSelezionata.confermaReso();
     }
    
-    
-    public boolean isPellicolaProiettata(int idPellicola) {
-        for(Map.Entry<String, List<Proiezione>> proiezioniSala : elencoProiezioni.entrySet()) {
-            for(Proiezione P: proiezioniSala.getValue()) {
-                if(P.getPellicola().getIdPellicola() == idPellicola)
-                    return true;
-            }
-        }
-        return false;
-    }
-
-    
-    
-    public Proiezione scegliProiezione(int idProiezione) {
-        for(Map.Entry<String, List<Proiezione>> proiezioniSala : elencoProiezioni.entrySet()) {
-                for(Proiezione P: proiezioniSala.getValue()) {
-                    if(P.getIdProiezione() == idProiezione)
-                        return P;
-                }
-            }
-        return null;
-    }
-    
-    public boolean haPostiVIP(int idProiezione) {
-        for(Map.Entry<String, List<Proiezione>> proiezioniSala : elencoProiezioni.entrySet()) {
-            for(Proiezione P: proiezioniSala.getValue()) 
-                if(P.getPostiRimanentiVIP() > 0)
-                    return true; 
-        } 
-        return false;
-    }    
-    
-    public boolean verificaProiezioneDaVisionare(int idProiezione, int idPellicola) {
-        if(elencoProiezioni.isEmpty()) 
-            return false;
-        else {
-            for(Map.Entry<String, List<Proiezione>> proiezioniSala : elencoProiezioni.entrySet()) {
-                for(Proiezione P: proiezioniSala.getValue()) {
-                    if(P.getIdProiezione() == idProiezione) {
-                        if(P.getPellicola().getIdPellicola() == idPellicola) {
-                            //spettacolo è stato trovato correttamente
-                            if(P.getPostiRimanentiStandard() > 0)
-                                return true;
-                            else {
-                                System.out.println("\nI posti per lo spettacolo sono esauriti\n");
-                                return false; 
-                            }
-                        } else {
-                            //trovato lo spettacolo inserito ma non è del film che ha scelto
-                            System.out.println("\nErrore: la proiezione scelta non è valida, essendo relativa ad un'altra pellicola\n");
-                            return false;
-                        }
-                    }
-                }
-            }
-            //ho esplorato ogni proiezione ma nessuna di queste ha l'ID inserito dall'addetto
-            System.out.println("\nErrore: la proiezione scelta non esiste nel sistema\n");
-            return false;
-        }
-    }
-    */
 }

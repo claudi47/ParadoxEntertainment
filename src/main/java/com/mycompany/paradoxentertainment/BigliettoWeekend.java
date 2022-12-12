@@ -14,7 +14,8 @@ public class BigliettoWeekend extends Biglietto {
     
     @Override
     public String toString() {
-        System.out.println(super.toString());
-        return " - Costo: " + prezzoTot;
-    }
+        StringBuilder s = new StringBuilder();
+        s.append(super.toString()).append("\n - Costo: ").append(prezzoTot);
+        return s.toString();
+    } 
 }

@@ -11,10 +11,11 @@ public class BigliettoFeriale extends Biglietto {
         if(isCategoriaProtetta)
             prezzoTot -= 2.0;
     }
-
+    
     @Override
     public String toString() {
-        System.out.println(super.toString());
-        return " - Costo: " + prezzoTot;
-    }
+        StringBuilder s = new StringBuilder();
+        s.append(super.toString()).append("\n - Costo: ").append(prezzoTot);
+        return s.toString();
+    } 
 }

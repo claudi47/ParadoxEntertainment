@@ -155,6 +155,7 @@ public class ParadoxEntertainment {
                 + "1. Vendita Biglietto \n"
                 + "2. Creazione Tessera \n"
                 + "3. Gestisci Tessera \n"
+                + "4. Rimborso Biglietto \n"
                 + "Altro. Torna al Login");
         
         scelta = Integer.parseInt(bf.readLine());
@@ -176,6 +177,10 @@ public class ParadoxEntertainment {
                     System.out.println("Non esistono tessere\n");
                 else
                     gestisciTessere();
+                break;
+            
+            case 4:
+                effettuaReso();
                 break;
                 
             default:
@@ -790,6 +795,32 @@ public class ParadoxEntertainment {
             System.out.println("\nLa tessera selezionata non esiste\n");
     }
     
+    public Tessera trovaTessera() throws IOException {
+        String inserimentoTessera;
+        int idTessera;
+        
+        if(!elencoTessere.isEmpty()) {
+            do {
+                System.out.println("\nInserire l'ID della tessera o premere Invio per stamparle tutte:");
+                inserimentoTessera = bf.readLine();
+                if(inserimentoTessera.equals("")) {
+                    stampaTessere();
+                    System.out.println("\nInserisci l'ID della tessera: ");
+                    inserimentoTessera = bf.readLine();
+                }
+
+                idTessera = Integer.parseInt(inserimentoTessera);
+                if(elencoTessere.get(idTessera) != null) 
+                    return elencoTessere.get(idTessera);
+                else
+                    System.out.println("\nTessera non trovata: inserire 1 per riprovare, altrimenti per annullare");
+            } while(bf.readLine().equals("1"));
+            return null;
+        }
+        System.out.println("\nNon sono presenti tessere nel sistema");
+        return null;
+    }
+    
     // VENDITA BIGLIETTO
     public void acquistaBiglietto() throws IOException {
         int idPellicola, idProiezione;
@@ -832,11 +863,9 @@ public class ParadoxEntertainment {
         // L'addetto specifica se il cliente ha diritto ad un biglietto ridotto
         System.out.println("\nDiritto a biglietto ridotto (minore di 12 anni, over-65, invalido): \n 1. Si \n 0. No");
         isCategoriaProtetta = (bf.readLine().equals("1"));
-        System.out.println("TEST: isCategoriaProtetta = " + isCategoriaProtetta);
         
         System.out.println("\nPoltrona VIP: \n 1. Si \n 0. No");
         isVIP = (bf.readLine().equals("1"));
-        System.out.println("TEST: isVIP = " + isVIP);
         
         if( (costoBiglietto = c.effettuaAcquisto(isVIP, isCategoriaProtetta)) > 0) {
             System.out.println("PARADOX: " + costoBiglietto + "\n");
@@ -846,7 +875,7 @@ public class ParadoxEntertainment {
                 System.out.println("\nTessera fedeltà esibita: \n 1. Si \n 0. No");
                 if(bf.readLine().equals("1")) {
                     do {
-                        System.out.println("\nInserire l'ID della tessera o premere Invio per stamparle prima tutte:\n");
+                        System.out.println("\nInserire l'ID della tessera o premere Invio per stamparle prima tutte:");
                         inserimentoTessera = bf.readLine();
                         if(inserimentoTessera.equals("")) {
                             stampaTessere();
@@ -864,9 +893,10 @@ public class ParadoxEntertainment {
                                 updatePointsStrategy = new SottraiPuntiBigliettoOmaggio();
                             else
                                 updatePointsStrategy = new AggiungiPuntiVendita();
+                            break;
                         }
                         else
-                            System.out.println("\nTessera non trovata: riprovare? \n 1. Si \n 0. No");
+                            System.out.println("\nTessera non trovata, inserire 1 per riprovare, altrimenti per annullare l'inserimento della tessera\n");
                     } while(bf.readLine().equals("1"));
                 }
             }
@@ -885,6 +915,106 @@ public class ParadoxEntertainment {
         System.out.println("\nVendita completata");
     }
     
+    public void effettuaReso() throws IOException {
+        tesseraSelezionata = trovaTessera();
+        
+        if(tesseraSelezionata != null) {
+            System.out.println("\nTessera selezionata: \n" + tesseraSelezionata.toString() + 
+                    "\nInserire 1 per confermare e proseguire, altrimenti per selezionare un'altra tessera");
+            if(!bf.readLine().equals("1"))
+                this.effettuaReso();
+            else {
+                if(c.effettuaReso()) {
+                    System.out.println("\nInserire 1 per confermare il rimborso del biglietto, altrimenti per annullare");
+                    if(bf.readLine().equals("1")) {
+                        confermaReso();
+                    }
+                }
+            }
+        } else
+            System.out.println("Operazione di rimborso annullata\n");
+    }
+    
+    public void confermaReso() {
+        float prezzoBiglietto;
+        prezzoBiglietto = c.confermaReso();
+        if(prezzoBiglietto > 0) {
+            updatePointsStrategy = new AggiungiPuntiRimborso();
+            updatePointsStrategy.aggiornaPunti(tesseraSelezionata, prezzoBiglietto);
+            System.out.println("\nProcedura di rimborso completata");
+        }
+    }
+    
+    /*
+    private boolean bigliettoVendutoTrovato(int idBiglietto) {
+        return c.bigliettoVendutoTrovato(idBiglietto);
+    }
+    
+    public void effettuaRimborso() throws IOException {
+        int idProiezione, idBigliettoDaRimbosare, idTessera;
+        String inserimentoProiezione, inserimentoTessera;
+        
+        System.out.println("\nInserire l'ID dello spettacolo del biglietto da rimborsare oppure premere Invio per stamparli tutti: ");
+        inserimentoProiezione = bf.readLine();
+        
+        if(inserimentoProiezione.equals("")) {
+            stampaProgrammazione();
+            System.out.println("\nInserisci l'ID della proiezione: ");
+            inserimentoProiezione = bf.readLine();
+        }
+        
+        idProiezione = Integer.parseInt(inserimentoProiezione);
+        
+        // Se la proiezione inserita esiste 
+        if(c.getProiezione(idProiezione) != null) {
+            System.out.println("\nProiezione selezionata:\n ");
+            c.stampaProiezione(idProiezione);
+            
+            System.out.println("\nInserisci l'ID del biglietto da rimborsare o premi Invio :\n");
+            idBigliettoDaRimbosare = Integer.parseInt(bf.readLine());
+            if(bigliettoVendutoTrovato(idBigliettoDaRimbosare)) {
+                System.out.println("\nInserisci 1 per proseguire, altrimenti per annullare l'operazione");
+                if(bf.readLine().equals("1")) {
+                    //verifica tessera
+                    do {
+                        System.out.println("\nInserire l'ID della tessera o premere Invio per stamparle prima tutte:");
+                        inserimentoTessera = bf.readLine();
+                        if(inserimentoTessera.equals("")) {
+                            stampaTessere();
+                            System.out.println("\nInserisci l'ID della tessera: ");
+                            inserimentoTessera = bf.readLine();
+                        }
+                        idTessera = Integer.parseInt(inserimentoTessera);
+                        tesseraSelezionata = elencoTessere.get(idTessera);
+
+                        if(tesseraSelezionata != null) {
+                            System.out.println("\nTessera selezionata: \n " + tesseraSelezionata.toString());
+                            updatePointsStrategy = new SottraiPuntiBigliettoOmaggio();
+                            System.out.println("\nInserire 1 per confermare il rimborso, altrimenti per annullare");    
+                            if(bf.readLine().equals("1"))
+                                confermaRimborso(idBigliettoDaRimbosare);
+                            else 
+                                break;
+                        }
+                        else
+                            System.out.println("\nTessera non trovata: riprovare? \n 1. Si \n 0. No");
+                    } while(bf.readLine().equals("1"));
+                }
+            }
+        }
+        System.out.println("\nOperazione di rimborso annullata\n");
+    }
+    
+    public void confermaRimborso(int idBigliettoDaRimborsare) {
+        float costoBiglietto;
+        costoBiglietto = c.confermaRimborso();
+        updatePointsStrategy.aggiornaPunti(tesseraSelezionata, costoBiglietto);
+        System.out.println("\nVendita completata");
+    }
+    
+    */
+    
+    
     public static String getInputPath(String s) {
          /*Send a path (a String path) to open in a specific directory
          or if null default directory */
@@ -897,6 +1027,7 @@ public class ParadoxEntertainment {
          if (returnVal != JFileChooser.APPROVE_OPTION) return null;
          return jd.getSelectedFile().toString();
     }
+    
     
     public static void main(String[] args) throws IOException {
         getInstance().menuLogin();   
