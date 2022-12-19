@@ -19,7 +19,6 @@ public class Cinema {
     private static Cinema cinema;
     private Sala salaCorrente, salaSelezionata;
     private Proiezione proiezioneCorrente, proiezioneSelezionata;
-    private int numeroProiezioni = 0;
     private Map<Integer, Sala> elencoSale;
     private int idSale = 0;
     private Map<Integer, List<Proiezione>>elencoProiezioni; // <IdSala, elencoProiezioniQuellaSala[]>
@@ -40,10 +39,18 @@ public class Cinema {
     // SALE
     public boolean verificaNomeSala(String nomeSala) {
         for(Map.Entry<Integer, Sala> entrySala : elencoSale.entrySet()) {
-            if(salaSelezionata != null) 
-                if(nomeSala.equals(salaSelezionata.getNomeSala()))
-                    return false;
             if(nomeSala.equals(entrySala.getValue().getNomeSala())) {
+                System.out.println("\nEsiste già una Sala " + entrySala.getKey());
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    public boolean verificaNomeSala(String nomeSala, Sala salaDaModificare) {
+        for(Map.Entry<Integer, Sala> entrySala : elencoSale.entrySet()) {
+            if(nomeSala.equals(entrySala.getValue().getNomeSala()) &&
+                    !entrySala.getValue().equals(salaDaModificare)) {
                 System.out.println("\nEsiste già una Sala " + entrySala.getKey());
                 return true;
             }
@@ -95,7 +102,7 @@ public class Cinema {
         do {
             System.out.println("\nInserisci il nome della sala");
             nomeSala = bf.readLine();
-        } while(verificaNomeSala(nomeSala) == true);
+        } while(verificaNomeSala(nomeSala, salaSelezionata) == true);
         
         System.out.println("Inserisci il numero di posti standard");
         postiStandard = Integer.parseInt(bf.readLine());
@@ -111,7 +118,7 @@ public class Cinema {
                     + " - Posti Standard: " + postiStandard + "\n"
                     + " - Posti VIP: " + postiVIP + "\n"
                     + " - Posti Totali: " + postiTot + "\n"
-                    + "Premere 1 per confermare, 0 per annullare l'inserimento"
+                    + "\nPremere 1 per confermare, altrimenti per annullare l'inserimento"
                     );
              
         if(bf.readLine().equals("1")) {
@@ -132,7 +139,7 @@ public class Cinema {
             System.out.println("\nErrore: selezione non valida");
         } else {
             System.out.println("\nSala selezionata: " + salaSelezionata.toString());
-            System.out.println("\nInserire 1 per confermare l'eliminazione, 0 altrimenti");
+            System.out.println("\nInserire 1 per confermare l'eliminazione, altrimenti per annullare");
             if(bf.readLine().equals("1")) {
                 elencoSale.remove(salaSelezionata.getIdSala());
                 elencoProiezioni.remove(salaSelezionata.getIdSala());
@@ -143,6 +150,10 @@ public class Cinema {
     }
     
     // PROIEZIONI
+    public boolean isProiezioneEsistente(int idProiezione) {
+        return (proiezioneSelezionata = getProiezione(idProiezione)) != null;
+    }
+    
     public boolean isElencoProiezioniEmpty() {
         return elencoProiezioni.isEmpty();
     }
@@ -158,10 +169,12 @@ public class Cinema {
     public boolean inserisciProiezione(Pellicola p) throws IOException {
         LocalTime orario = null;
         boolean isInvalid = false;
+        int idSala;
         
-        System.out.println("\nInserisci l'ID della sala in cui tenere la proiezione");
         stampaSale();
-        salaSelezionata = getSala(Integer.parseInt(bf.readLine()));
+        System.out.println("\nInserisci l'ID della sala in cui tenere la proiezione");
+        idSala = Integer.parseInt(bf.readLine());
+        salaSelezionata = getSala(idSala);
         
         if(salaSelezionata == null) {
             System.out.println("\nErrore: la sala inserita non esiste\n");
@@ -216,9 +229,9 @@ public class Cinema {
                 + "\nPellicola: " + p.getNomePellicola() 
                 + "\nSala: " + salaSelezionata.getNomeSala() 
                 + "\nOrario: " + orario.toString()
-                + "\n\nPremere 1 per confermare, 0 per annullare l'inserimento"); 
+                + "\n\nPremere 1 per confermare, altrimenti per annullare l'inserimento"); 
         
-        if(Integer.parseInt(bf.readLine()) == 0) {
+        if(!bf.readLine().equals("1")) {
             System.out.println("\nInserimento annullato\n");
             return false;
         }
@@ -230,15 +243,12 @@ public class Cinema {
     
     public void confermaProiezione() {
         elencoProiezioni.get(salaSelezionata.getIdSala()).add(proiezioneCorrente);
-        numeroProiezioni++;
-        System.out.println("\nInserimento della proiezione completato con successo");
+        System.out.println("\nInserimento della proiezione completato con successo\n");
     }
     
-    public void modificaProiezione(Proiezione proiezioneDaModificare, Pellicola p) throws IOException {
+    public void modificaProiezione(Pellicola p) throws IOException {
         LocalTime orario = null;
         boolean isInvalid = false;
-        
-        proiezioneSelezionata = proiezioneDaModificare;
         
         System.out.println("\nInserisci l'ID della sala in cui tenere la proiezione");
         stampaSale();
@@ -303,7 +313,7 @@ public class Cinema {
         
         if(bf.readLine().equals("1")) {
             elencoProiezioni.get(proiezioneSelezionata.getSala().getIdSala()).remove(proiezioneSelezionata);
-            proiezioneSelezionata.modificaProiezione(p, salaCorrente, orario);
+            proiezioneSelezionata.modificaProiezione(p, salaSelezionata, orario);
             elencoProiezioni.get(salaSelezionata.getIdSala()).add(proiezioneSelezionata);
             System.out.println("\nModifica effettuata con successo\n");
         } else
@@ -338,7 +348,6 @@ public class Cinema {
             for(Proiezione P: proiezioniSala.getValue()) {
                 if(P.getPellicola().getIdPellicola() == idPellicola) {
                     numeroProiezioniEliminate++;
-                    System.out.println("\n" + P.stampaProiezioneConSala());
                     proiezioniDaRimuovere.add(P);
                 }
             }
@@ -357,24 +366,26 @@ public class Cinema {
         
         // Se è stata inserita una proiezione realmente esistente
         if(proiezioneSelezionata != null) {
-            System.out.println("\nProiezione selezionata: \n" + proiezioneSelezionata.toString() + "\n"
-            + "\nPremi 1 per confermare l'eliminazione, altro per annullare");
-            // Se si è confermata l'eliminazione inserendo 1
-            if(bf.readLine().equals("1")) {
-                elencoProiezioni.get(proiezioneSelezionata.getSala().getIdSala()).remove(proiezioneSelezionata);
-                numeroProiezioni--;
-                System.out.println("\nEliminazione completata\n");
-                /*
-                for(Map.Entry<Integer, List<Proiezione>> proiezioniSala : elencoProiezioni.entrySet()) {
-                    for(Proiezione P: proiezioniSala.getValue()) {
-                        if(P.getIdProiezione() == proiezioneSelezionata.getIdProiezione()) {
-                            proiezioniSala.getValue().remove(P);
-                                                    }
+            if(proiezioneSelezionata.getBigliettiVenduti().isEmpty()) {
+                System.out.println("\nProiezione selezionata: \n\n" + proiezioneSelezionata.toString() + "\n"
+                + "\nPremi 1 per confermare l'eliminazione, altro per annullare");
+                // Se si è confermata l'eliminazione inserendo 1
+                if(bf.readLine().equals("1")) {
+                    elencoProiezioni.get(proiezioneSelezionata.getSala().getIdSala()).remove(proiezioneSelezionata);
+                    System.out.println("\nEliminazione completata\n");
+                    /*
+                    for(Map.Entry<Integer, List<Proiezione>> proiezioniSala : elencoProiezioni.entrySet()) {
+                        for(Proiezione P: proiezioniSala.getValue()) {
+                            if(P.getIdProiezione() == proiezioneSelezionata.getIdProiezione()) {
+                                proiezioniSala.getValue().remove(P);
+                                                        }
+                        }
                     }
-                }
-                */
+                    */
+                } else
+                    System.out.println("\nEliminazione annullata\n");
             } else // Se si è inserito un qualunque altro input procede all'annullamento
-                System.out.println("\nEliminazione annullata\n");
+                System.out.println("\nPer la proiezione selezionata risulta già venduta una quantità di biglietti pari a " + proiezioneSelezionata.getBigliettiVenduti().size() + " e non può quindi essere modificata\n");
         } else //Se è stato inserito un ID di proiezione non valido
             System.out.println("\nScelta non valida");   
     }
@@ -415,6 +426,9 @@ public class Cinema {
     }
 
     public int getNumeroProiezioni() {
+        int numeroProiezioni = 0;
+        for(Map.Entry<Integer, List<Proiezione>> proiezioniSala : elencoProiezioni.entrySet()) 
+            numeroProiezioni += proiezioniSala.getValue().size();
         return numeroProiezioni;
     }
     
@@ -444,7 +458,22 @@ public class Cinema {
         return null;
     }
     
+    // Riceve come parametro l'ID di una pellcola e restituisce se esistono proiezioni 
+    // relative ad essa o meno
+    public boolean isPellicolaProiettata(int idPellicola) {
+        for(Map.Entry<Integer, List<Proiezione>> proiezioniSala : elencoProiezioni.entrySet()) {
+            for(Proiezione P: proiezioniSala.getValue()) {
+                if(P.getPellicola().getIdPellicola() == idPellicola) {
+                    return true;
+                }
+            }
+        } return false;
+    }
+    
+    
     // VENDITA BIGLIETTO
+    
+    // ACQUISTA BIGLIETTO CINEMA: VERIFICA SE LA PELLICOLA SCELTA HA DELLE PROIEZIONI VALIDE
     public boolean acquistaBiglietto(int idPellicola) throws IOException {
         // Il cinema stampa le sue proiezioni durante la vendita del biglietto
         if(proiezioniPerDataPellicola(idPellicola) == 0) {
@@ -454,6 +483,7 @@ public class Cinema {
             return true;
     }
     
+    // SCEGLI PROIEZIONE CINEMA: VERIFICA CHE LA PROIEZIONE SCELTA ESISTA E ABBIA ANCORA POSTI LIBERI
     public boolean scegliProiezione(int idProiezione) {
         // verifica se la proiezione selezionata esiste
         if((proiezioneSelezionata = getProiezione(idProiezione)) != null) {
@@ -499,15 +529,19 @@ public class Cinema {
     }
     
     public boolean effettuaReso() throws IOException {
+        // Trova proiezione
         proiezioneSelezionata = trovaProiezione();
         
         if(proiezioneSelezionata != null) {
-            System.out.println("\nProiezione selezionata: \n" + proiezioneSelezionata.toString() + 
-                    "\nInserire 1 per confermare e proseguire, altrimenti per selezionare un'altra proiezione");
-            if(!bf.readLine().equals("1"))
-                this.effettuaReso();
-            else 
-                return proiezioneSelezionata.effettuaReso();
+            if(proiezioneSelezionata.getOrario().isAfter(LocalTime.now())) {
+                System.out.println("\nProiezione selezionata: \n" + proiezioneSelezionata.toString() + 
+                        "\nInserire 1 per confermare e proseguire, altrimenti per selezionare un'altra proiezione");
+                if(!bf.readLine().equals("1"))
+                    effettuaReso();
+                else 
+                    return proiezioneSelezionata.effettuaReso();
+            } else
+                System.out.println("Errore: lo spettacolo ha già avuto inizio e non è più possibile richiedere il rimborso\n");
         } else
             System.out.println("Operazione di rimborso annullata\n");
         return false;
@@ -516,5 +550,4 @@ public class Cinema {
     public float confermaReso() {
         return proiezioneSelezionata.confermaReso();
     }
-   
 }

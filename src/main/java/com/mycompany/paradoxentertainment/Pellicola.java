@@ -15,10 +15,6 @@ public class Pellicola {
         this.genere = genere;
         this.durata = durata;
         this.idPellicola = idPellicola;
-    }  
-
-    public Locandina inserisciLocandina(String path, int baseStampa, int altezzaStampa) {
-        return new Locandina(path, baseStampa, altezzaStampa, this.idPellicola);
     }
     
     public String getNomePellicola() {
