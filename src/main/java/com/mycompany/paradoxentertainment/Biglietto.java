@@ -14,14 +14,12 @@ public abstract class Biglietto {
     protected LocalDate data;
     protected Proiezione proiezione;
     protected int idBiglietto;
-    static int idBiglietti = 0;
     
     protected Biglietto(boolean isVIP, boolean isCategoriaProtetta, Proiezione proiezione) {
         this.proiezione = proiezione;
         this.data = LocalDate.now();
         this.isVIP = isVIP;
         this.isCategoriaProtetta = isCategoriaProtetta;
-        this.idBiglietto = ++idBiglietti;
     }
 
     public int getIdBiglietto() {
@@ -36,6 +34,10 @@ public abstract class Biglietto {
         return isVIP;
     }
 
+    public void setIdBiglietto(int idBiglietto) {
+        this.idBiglietto = idBiglietto;
+    }
+    
     @Override
     public String toString() {
         String tipoBiglietto, poltrona;

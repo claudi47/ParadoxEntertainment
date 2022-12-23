@@ -7,12 +7,11 @@ public class Sala {
     private int postiVIP;
     private int idSala;
 
-    public Sala(String IDSala, int postiStandard, int postiVIP, int idSala) {
+    public Sala(String IDSala, int postiStandard, int postiVIP) {
         this.nomeSala = IDSala;
         this.postiStandard = postiStandard;
         this.postiVIP = postiVIP;
         this.postiTot = (postiStandard + postiVIP);
-        this.idSala = idSala;
     }
     
     public String getNomeSala() {
@@ -33,6 +32,10 @@ public class Sala {
 
     public int getIdSala() {
         return idSala;
+    }
+
+    public void setIdSala(int idSala) {
+        this.idSala = idSala;
     }
     
     public void modificaSala(String nomeSala, int postiStandard, int postiVIP) {

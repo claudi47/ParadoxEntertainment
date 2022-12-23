@@ -8,17 +8,12 @@ public class Pellicola {
     private int durata;
     private int idPellicola;
     
-    public Pellicola(String nomePellicola, String regista, int anno, String genere, int durata, int idPellicola) {
+    public Pellicola(String nomePellicola, String regista, int anno, String genere, int durata) {
         this.nomePellicola = nomePellicola;
         this.regista = regista;
         this.anno = anno;
         this.genere = genere;
         this.durata = durata;
-        this.idPellicola = idPellicola;
-    }  
-
-    public Locandina inserisciLocandina(String path, int baseStampa, int altezzaStampa) {
-        return new Locandina(path, baseStampa, altezzaStampa, this.idPellicola);
     }
     
     public String getNomePellicola() {

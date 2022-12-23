@@ -24,9 +24,10 @@ public class Proiezione {
     private List<Biglietto> bigliettiVenduti;
     private List<Biglietto> bigliettiRimborsati;
     BufferedReader bf = new BufferedReader(new InputStreamReader(System.in));
+    UpdateSeatsStrategy updateSeatsStrategy;
+    private static int idBiglietti = 0;
 
-    public Proiezione(int idProiezione, Sala sala, Pellicola pellicola, LocalTime orario) {
-        this.idProiezione = idProiezione;
+    public Proiezione(Sala sala, Pellicola pellicola, LocalTime orario) {
         this.sala = sala;
         this.pellicola = pellicola;
         this.orario = orario;
@@ -80,6 +81,10 @@ public class Proiezione {
     public List<Biglietto> getBigliettiVenduti() {
         return bigliettiVenduti;
     }
+
+    public void setIdProiezione(int idProiezione) {
+        this.idProiezione = idProiezione;
+    }
     
     public void modificaProiezione(Pellicola pellicola, Sala sala, LocalTime orario) {
         this.pellicola = pellicola;
@@ -132,19 +137,16 @@ public class Proiezione {
         return bigliettoCorrente.getPrezzoTot();        
     }
     
+    public void aggiornaPosti(Proiezione proiezione, boolean isVIP) {
+        updateSeatsStrategy.aggiornaPosti(this, isVIP);
+    }
+    
     public void confermaAcquisto() {
+        bigliettoCorrente.setIdBiglietto(++idBiglietti);
         bigliettiVenduti.add(bigliettoCorrente);
         System.out.println("\nPROIEZIONE: biglietto aggiunto all'elenco\n");
-        if(bigliettoCorrente.getIsVIP()) {
-            this.postiRimanentiVIP--;
-            System.out.println("\nPROIEZIONE: ho tolto 1 posto VIP, adesso sono " +  postiRimanentiVIP + "\n");
-        }
-        else {
-            this.postiRimanentiStandard--;
-            System.out.println("\nPROIEZIONE: ho tolto 1 posto standard, adesso sono: " + postiRimanentiStandard + "\n");
-        }
-        this.postiRimanentiTot--;
-        System.out.println("\nPROIEZIONE: ho tolto 1 posto totale, adesso sono: " + postiRimanentiTot + "\n");
+        updateSeatsStrategy = new RimuoviPosto();
+        aggiornaPosti(this, bigliettoCorrente.getIsVIP());
     }
     
     public Biglietto trovaBigliettoVenduto() throws IOException {
@@ -180,9 +182,9 @@ public class Proiezione {
         
         if(bigliettoSelezionato != null) {
             System.out.println("\nBiglietto selezionato: \n" + bigliettoSelezionato.toString() + 
-                    "\nInserire 1 per confermare e proseguire, altrimenti per selezionare un altro biglietto");
+                    "\nInserire 1 per confermare il biglietto selezionato, altrimenti per selezionarne un altro");
             if(!bf.readLine().equals("1"))
-                this.effettuaReso();
+                effettuaReso();
             else 
                 isBigliettoTrovato = true;
         } else
@@ -193,11 +195,10 @@ public class Proiezione {
     public float confermaReso() {
         bigliettiRimborsati.add(bigliettoSelezionato);
         bigliettiVenduti.remove(bigliettoSelezionato);
-        if(bigliettoSelezionato.getIsVIP())
-            this.postiRimanentiVIP++;
-        else
-            this.postiRimanentiStandard++;
-        this.postiRimanentiTot++;
+        
+        updateSeatsStrategy = new AggiungiPosto();
+        aggiornaPosti(this, bigliettoSelezionato.getIsVIP());
+        
         return bigliettoSelezionato.getPrezzoTot();
     }
     
@@ -205,7 +206,8 @@ public class Proiezione {
     public String toString() {
         return "Proiezione ID: " + idProiezione + 
                 "\n - Pellicola: " + pellicola.getNomePellicola() + 
-                "\n - Orario: " + orario + 
+                "\n - Orario: " + orario +
+                "\n - Durata: " + pellicola.getDurata() + " minuti" +
                 "\n - Posti totali rimanenti: " + postiRimanentiTot + 
                 "\n - Posti standard rimanenti: " + postiRimanentiStandard + 
                 "\n - Posti VIP rimanenti: " + postiRimanentiVIP;
