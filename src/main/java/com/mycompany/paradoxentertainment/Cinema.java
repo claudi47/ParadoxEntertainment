@@ -37,7 +37,7 @@ public class Cinema {
     }
     
     // SALE
-    public boolean verificaNomeSala(String nomeSala) {
+    public boolean salaGiaEsistente(String nomeSala) {
         for(Map.Entry<Integer, Sala> entrySala : elencoSale.entrySet()) {
             if(nomeSala.equals(entrySala.getValue().getNomeSala())) {
                 System.out.println("\nEsiste già una Sala " + entrySala.getKey());
@@ -47,7 +47,7 @@ public class Cinema {
         return false;
     }
     
-    public boolean verificaNomeSala(String nomeSala, Sala salaDaModificare) {
+    public boolean salaGiaEsistente(String nomeSala, Sala salaDaModificare) {
         for(Map.Entry<Integer, Sala> entrySala : elencoSale.entrySet()) {
             if(nomeSala.equals(entrySala.getValue().getNomeSala()) &&
                     !entrySala.getValue().equals(salaDaModificare)) {
@@ -59,20 +59,25 @@ public class Cinema {
     }
     
     public void inserisciSala(String nomeSala, int postiStandard, int postiVIP) {
-        salaCorrente = new Sala(nomeSala, postiStandard, postiVIP, ++idSale);
+        salaCorrente = new Sala(nomeSala, postiStandard, postiVIP);
     }
    
     public void confermaSala() {
+        salaCorrente.setIdSala(++idSale);
         elencoSale.put(salaCorrente.getIdSala(), salaCorrente);
         elencoProiezioni.put(salaCorrente.getIdSala(), new ArrayList());
         salaCorrente.toString();
+    }
+    
+    public void stampaSala(int idSala) {
+        System.out.println("\n" + elencoSale.get(idSala).toString());
     }
     
     public void stampaSale() {
         if(elencoSale.isEmpty()) 
             System.out.println("Non esistono sale\n");
         for(Map.Entry<Integer, Sala> entrySala : elencoSale.entrySet()) {
-            System.out.println("\n" + entrySala.getValue().toString());
+            stampaSala(entrySala.getKey());
         }
     }
     
@@ -102,7 +107,7 @@ public class Cinema {
         do {
             System.out.println("\nInserisci il nome della sala");
             nomeSala = bf.readLine();
-        } while(verificaNomeSala(nomeSala, salaSelezionata) == true);
+        } while(salaGiaEsistente(nomeSala, salaSelezionata) == true);
         
         System.out.println("Inserisci il numero di posti standard");
         postiStandard = Integer.parseInt(bf.readLine());
@@ -123,7 +128,7 @@ public class Cinema {
              
         if(bf.readLine().equals("1")) {
             salaSelezionata.modificaSala(nomeSala, postiStandard, postiVIP);
-            System.out.println("Modifica effettuata con successo\n");
+            System.out.println("\nModifica effettuata con successo\n");
         } else 
             System.out.println("Modifica annullata\n");
     }
@@ -165,83 +170,19 @@ public class Cinema {
                     return P;
         return null;
     }
-
-    public boolean inserisciProiezione(Pellicola p) throws IOException {
-        LocalTime orario = null;
-        boolean isInvalid = false;
-        int idSala;
-        
-        stampaSale();
-        System.out.println("\nInserisci l'ID della sala in cui tenere la proiezione");
-        idSala = Integer.parseInt(bf.readLine());
-        salaSelezionata = getSala(idSala);
-        
-        if(salaSelezionata == null) {
-            System.out.println("\nErrore: la sala inserita non esiste\n");
-            return false;
-        }
-        
-        System.out.println("\nSala selezionata: " + salaSelezionata.getNomeSala());
-        if(elencoProiezioni.containsKey(salaSelezionata.getIdSala()) && !elencoProiezioni.get(salaSelezionata.getIdSala()).isEmpty()) {
-            System.out.println("\nSpettacoli già in programma in Sala " + salaSelezionata.getNomeSala());
-            stampaProiezioniSala(elencoProiezioni.get(salaSelezionata.getIdSala()));
-        }
-        
-        // Inserimento orario dello spettacolo
-        System.out.println("\nInserisci l'orario nel formato 'ora:minuti'");
-        
-        try {
-            orario = LocalTime.parse(bf.readLine(), DateTimeFormatter.ofPattern("HH:mm"));
-            
-            //verifica orario per proiezione 
-            if(orario.getHour() < 16 || orario.getHour() > 23) {
-                System.out.println("Orario inserito non valido: è consentito aggiungere spettacoli tra le 16:00 e 00:00");
-                return false;
-            } if(orario.getMinute() < 0 || orario.getMinute() > 59) {
-                System.out.println("Orario inserito non valido: formato dei minuti non valido (deve essere tra 00 e 59)");
-                return false;
-            } 
-        } catch(DateTimeParseException ex) {
-            System.out.println("Inserimento dell'orario non valido: inserire nel formato 'hh:mm'");
-            return false;
-        }
-        
-        // verifica dello spettacolo in inserimento 
-        if(elencoProiezioni.containsKey(salaSelezionata.getIdSala()) && !elencoProiezioni.get(salaSelezionata.getIdSala()).isEmpty()) {
-            for (Proiezione P: elencoProiezioni.get(salaSelezionata.getIdSala())) {
-                if( P.getOrario().equals(orario) || 
-                        (orario.isAfter(P.getOrario()) && orario.isBefore(P.getOrario().plusMinutes(P.getPellicola().getDurata()))) ||
-                            (orario.isBefore(P.getOrario()) && orario.plusMinutes(p.getDurata()).isAfter(P.getOrario()))) {
-                    isInvalid = true;
-                    if(P.getOrario().equals(orario)) 
-                        System.out.println("Errore: l'orario inserito corrisponde a quello dello spettacolo " +P.getIdProiezione()+ ", di " +P.getPellicola().getNomePellicola()+ " in sala " +P.getSala().getNomeSala());
-                    if(orario.isAfter(P.getOrario()) && orario.isBefore(P.getOrario().plusMinutes(P.getPellicola().getDurata()))) 
-                        System.out.println("Errore: lo spettacolo inizia quando ancora non è terminato il precedente delle " +P.getOrario()+ " di " +P.getPellicola().getNomePellicola()+ " in Sala " +P.getSala().getNomeSala());
-                    if(orario.isBefore(P.getOrario()) && orario.plusMinutes(p.getDurata()).isAfter(P.getOrario()))
-                        System.out.println("Errore: lo spettacolo si sovrappone al successivo delle " +P.getOrario()+ " di " +P.getPellicola().getNomePellicola()+ " in Sala " +P.getSala().getNomeSala());
-                } 
-            }
-            if(isInvalid)
-                return false;
-        }
-        
-        System.out.println("\nRiepilogo:"
-                + "\nPellicola: " + p.getNomePellicola() 
-                + "\nSala: " + salaSelezionata.getNomeSala() 
-                + "\nOrario: " + orario.toString()
-                + "\n\nPremere 1 per confermare, altrimenti per annullare l'inserimento"); 
-        
-        if(!bf.readLine().equals("1")) {
-            System.out.println("\nInserimento annullato\n");
-            return false;
-        }
-        
-        proiezioneCorrente = new Proiezione(++idProiezioni, salaSelezionata, p, orario);
-        
-        return true;
-    }
     
+    public void inserisciProiezione(Pellicola pellicola, int idSala, LocalTime orario) {
+        salaSelezionata = getSala(idSala);
+        proiezioneCorrente = new Proiezione(salaSelezionata, pellicola, orario);
+        
+        System.out.println("\nRiepilogo spettacolo:"
+                + "\n - Pellicola: " + pellicola.getNomePellicola() 
+                + "\n - Sala: " + salaSelezionata.getNomeSala() 
+                + "\n - Orario: " + orario.toString());
+    }
+
     public void confermaProiezione() {
+        proiezioneCorrente.setIdProiezione(++idProiezioni);
         elencoProiezioni.get(salaSelezionata.getIdSala()).add(proiezioneCorrente);
         System.out.println("\nInserimento della proiezione completato con successo\n");
     }
@@ -262,7 +203,7 @@ public class Cinema {
         System.out.println("\nSala selezionata: " + salaSelezionata.getNomeSala());
         if(elencoProiezioni.containsKey(salaSelezionata.getIdSala()) && !elencoProiezioni.get(salaSelezionata.getIdSala()).isEmpty()) {
             System.out.println("\nSpettacoli già in programma in Sala " + salaSelezionata.getNomeSala());
-            stampaProiezioniSala(elencoProiezioni.get(salaSelezionata.getIdSala()));
+            stampaProiezioniSala(salaSelezionata.getIdSala());
         }
         
         // Inserimento orario dello spettacolo
@@ -395,19 +336,19 @@ public class Cinema {
     public void stampaProgrammazione() {
         if(elencoProiezioni.isEmpty()) 
             System.out.println("Non esistono proiezioni\n");
-        else 
+        else {
+            System.out.println("\n");
             for(Map.Entry<Integer, List<Proiezione>> proiezioniSala : elencoProiezioni.entrySet()) {
-                if(!proiezioniSala.getValue().isEmpty()) {
-                    System.out.println("\nSala " + elencoSale.get(proiezioniSala.getKey()).getNomeSala());
-                    stampaProiezioniSala(proiezioniSala.getValue());
-                }
+                stampaProiezioniSala(proiezioniSala.getKey());
             }
+        }
     }
     
-    public void stampaProiezioniSala(List<Proiezione> proiezioni) {
-        if(!proiezioni.isEmpty()) {
-            for(Proiezione P: proiezioni)
-                System.out.println("\n" + P.toString());
+    public void stampaProiezioniSala(int idSala) {
+        if(elencoProiezioni.containsKey(idSala) && !elencoProiezioni.get(idSala).isEmpty()) {
+            System.out.println("Sala " + elencoSale.get(idSala).getNomeSala() + "\n");
+            for(Proiezione P: elencoProiezioni.get(idSala))
+                System.out.println(P.toString() + "\n");
         }
     }
     
@@ -424,12 +365,26 @@ public class Cinema {
         }
         return numeroProiezioniPerPellicola;
     }
+    
+    public void stampaProiezioniPerPellicola(int idPellicola) throws IOException {
+        for(Map.Entry<Integer, List<Proiezione>> proiezioniSala : elencoProiezioni.entrySet()) {
+            for(Proiezione P: proiezioniSala.getValue()) {
+                if(P.getPellicola().getIdPellicola() == idPellicola) {
+                    System.out.println("\n" + P.stampaProiezioneConSala());
+                }
+            }
+        }
+    }
 
     public int getNumeroProiezioni() {
         int numeroProiezioni = 0;
         for(Map.Entry<Integer, List<Proiezione>> proiezioniSala : elencoProiezioni.entrySet()) 
             numeroProiezioni += proiezioniSala.getValue().size();
         return numeroProiezioni;
+    }
+    
+    public int getNumeroProiezioniSala(int idSala) {
+        return elencoProiezioni.get(idSala).size();
     }
     
     public Proiezione trovaProiezione() throws IOException {
@@ -470,9 +425,35 @@ public class Cinema {
         } return false;
     }
     
+    public boolean isOrarioSpettacoloValido(LocalTime orario, int idSala, int durataPellicola) {
+        boolean isValid = true;
+        
+        // verifica dello spettacolo in inserimento 
+        if(elencoProiezioni.containsKey(idSala) && !elencoProiezioni.get(idSala).isEmpty()) {
+            for (Proiezione P: elencoProiezioni.get(idSala)) {
+                if( P.getOrario().equals(orario) ||
+                        (orario.isAfter(P.getOrario()) && orario.isBefore(P.getOrario().plusMinutes(P.getPellicola().getDurata()))) ||
+                        (orario.isBefore(P.getOrario()) && orario.plusMinutes(durataPellicola).isAfter(P.getOrario()))) {
+                    isValid = false;
+                    if(P.getOrario().equals(orario))
+                        System.out.println("Errore: l'orario inserito corrisponde a quello dello spettacolo " +P.getIdProiezione()+ ", di " +P.getPellicola().getNomePellicola()+ " in sala " +P.getSala().getNomeSala());
+                    if(orario.isAfter(P.getOrario()) && orario.isBefore(P.getOrario().plusMinutes(P.getPellicola().getDurata())))
+                        System.out.println("Errore: lo spettacolo inizia quando ancora non è terminato il precedente delle " +P.getOrario()+ " di " +P.getPellicola().getNomePellicola()+ " in Sala " +P.getSala().getNomeSala());
+                    if(orario.isBefore(P.getOrario()) && orario.plusMinutes(durataPellicola).isAfter(P.getOrario()))
+                        System.out.println("Errore: lo spettacolo si sovrappone al successivo delle " +P.getOrario()+ " di " +P.getPellicola().getNomePellicola()+ " in Sala " +P.getSala().getNomeSala());
+                } 
+            }
+        }
+        return isValid;
+    }
+    
     
     // VENDITA BIGLIETTO
+    public void acquistaBiglietto(int idPellicola) throws IOException {
+        stampaProiezioniPerPellicola(idPellicola);
+    }
     
+    /*
     // ACQUISTA BIGLIETTO CINEMA: VERIFICA SE LA PELLICOLA SCELTA HA DELLE PROIEZIONI VALIDE
     public boolean acquistaBiglietto(int idPellicola) throws IOException {
         // Il cinema stampa le sue proiezioni durante la vendita del biglietto
@@ -482,6 +463,7 @@ public class Cinema {
         } else
             return true;
     }
+    */
     
     // SCEGLI PROIEZIONE CINEMA: VERIFICA CHE LA PROIEZIONE SCELTA ESISTA E ABBIA ANCORA POSTI LIBERI
     public boolean scegliProiezione(int idProiezione) {

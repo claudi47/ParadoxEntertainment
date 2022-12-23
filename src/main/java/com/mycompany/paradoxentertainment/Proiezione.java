@@ -25,9 +25,9 @@ public class Proiezione {
     private List<Biglietto> bigliettiRimborsati;
     BufferedReader bf = new BufferedReader(new InputStreamReader(System.in));
     UpdateSeatsStrategy updateSeatsStrategy;
+    private static int idBiglietti = 0;
 
-    public Proiezione(int idProiezione, Sala sala, Pellicola pellicola, LocalTime orario) {
-        this.idProiezione = idProiezione;
+    public Proiezione(Sala sala, Pellicola pellicola, LocalTime orario) {
         this.sala = sala;
         this.pellicola = pellicola;
         this.orario = orario;
@@ -80,6 +80,10 @@ public class Proiezione {
 
     public List<Biglietto> getBigliettiVenduti() {
         return bigliettiVenduti;
+    }
+
+    public void setIdProiezione(int idProiezione) {
+        this.idProiezione = idProiezione;
     }
     
     public void modificaProiezione(Pellicola pellicola, Sala sala, LocalTime orario) {
@@ -138,6 +142,7 @@ public class Proiezione {
     }
     
     public void confermaAcquisto() {
+        bigliettoCorrente.setIdBiglietto(++idBiglietti);
         bigliettiVenduti.add(bigliettoCorrente);
         System.out.println("\nPROIEZIONE: biglietto aggiunto all'elenco\n");
         updateSeatsStrategy = new RimuoviPosto();

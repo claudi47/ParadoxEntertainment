@@ -15,13 +15,12 @@ public class Tessera {
     private int punti;
     private int idTessera;
     
-    public Tessera(String nome, String cognome, LocalDate data, String codiceFiscale, int idTessera) {
+    public Tessera(String nome, String cognome, LocalDate data, String codiceFiscale) {
         this.nomeUtente = nome;
         this.cognomeUtente = cognome;
         this.dataDiNascita = data;
         this.codiceFiscale = codiceFiscale;
         this.punti = 0;
-        this.idTessera = idTessera;
     }
 
     public String getCodiceFiscale() {
@@ -38,6 +37,10 @@ public class Tessera {
 
     public void setPunti(int punti) {
         this.punti = punti;
+    }
+
+    public void setIdTessera(int idTessera) {
+        this.idTessera = idTessera;
     }
     
     void modificaTessera(String nome, String cognome, LocalDate dataDiNascita, String codiceFiscale) {
