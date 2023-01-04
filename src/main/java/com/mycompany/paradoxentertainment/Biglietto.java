@@ -1,5 +1,6 @@
 package com.mycompany.paradoxentertainment;
 
+import java.io.Serializable;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -8,7 +9,7 @@ import java.time.format.DateTimeFormatter;
  *
  * @author Daniele
  */
-public abstract class Biglietto {
+public abstract class Biglietto implements Serializable {
     protected float prezzoTot;
     protected boolean isVIP, isCategoriaProtetta;
     protected LocalDate data;

@@ -1,10 +1,12 @@
 package com.mycompany.paradoxentertainment;
 
+import java.io.Serializable;
+
 /**
  *
  * @author Daniele
  */
-public class Locandina {
+public class Locandina implements Serializable {
     private String path;
     private int baseStampa;
     private int altezzaStampa;

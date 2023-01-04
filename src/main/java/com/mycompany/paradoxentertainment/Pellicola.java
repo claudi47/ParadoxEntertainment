@@ -1,6 +1,8 @@
 package com.mycompany.paradoxentertainment;
 
-public class Pellicola {
+import java.io.Serializable;
+
+public class Pellicola implements Serializable {
     private String nomePellicola;
     private String regista;
     private int anno;
