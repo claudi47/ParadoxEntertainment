@@ -1,6 +1,8 @@
 package com.mycompany.paradoxentertainment;
 
-public class Sala {
+import java.io.Serializable;
+
+public class Sala implements Serializable {
     private String nomeSala;
     private int postiTot;
     private int postiStandard;

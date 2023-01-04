@@ -4,11 +4,13 @@
  */
 package com.mycompany.paradoxentertainment;
 
+import java.io.Serializable;
+
 /**
  *
  * @author Daniele
  */
-public class AggiungiPosto implements UpdateSeatsStrategy {
+public class AggiungiPosto implements UpdateSeatsStrategy, Serializable {
 
     @Override
     public void aggiornaPosti(Proiezione proiezione, boolean isVIP) {

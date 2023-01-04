@@ -1,5 +1,6 @@
 package com.mycompany.paradoxentertainment;
 
+import java.io.Serializable;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
@@ -7,7 +8,7 @@ import java.time.format.DateTimeFormatter;
  *
  * @author Daniele
  */
-public class Tessera {
+public class Tessera implements Serializable {
     private String nomeUtente;
     private String cognomeUtente;
     private String codiceFiscale;

@@ -2,6 +2,8 @@ package com.mycompany.paradoxentertainment;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Path;
@@ -14,6 +16,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import javax.swing.JFileChooser;
+import java.io.FileOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.util.Collections;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -25,11 +33,11 @@ public class ParadoxEntertainment {
     BufferedReader bf = new BufferedReader(new InputStreamReader(System.in));
     private Map<Integer, Pellicola> elencoPellicole;  //<IdPellicola, Pellicola>
     private Pellicola pellicolaCorrente, pellicolaSelezionata;
-    private int idPellicole = 0;
+    //private int idPellicole;
     private Map<Integer, Locandina> elencoLocandine; // <IdPellicola, Locandina>
     private Locandina locandinaCorrente, locandinaSelezionata;
     private Map<Integer, Tessera> elencoTessere;
-    private int idTessere = 0;
+    //private int idTessere = 0;
     private Tessera tesseraCorrente, tesseraSelezionata;
     UpdatePointsStrategy updatePointsStrategy;
     
@@ -39,8 +47,6 @@ public class ParadoxEntertainment {
     public static ParadoxEntertainment getInstance() {
         if (paradoxEntertainment == null)
             paradoxEntertainment = new ParadoxEntertainment();
-        else
-            System.out.println("Instanza già creata");
         return paradoxEntertainment;
     }
     
@@ -52,7 +58,7 @@ public class ParadoxEntertainment {
     }
     
     // MENU 
-    public void menuLogin() throws IOException {
+    public void menuLogin() {
         int scelta;
         
         try {
@@ -75,14 +81,11 @@ public class ParadoxEntertainment {
                     System.out.println("Scelta non valida\n\n");
                     break;
             }
-            /*
-            TO DO il flush della console
-            Runtime.getRuntime().exec("cls");
-            */
             menuLogin();
-       } catch (NumberFormatException ex) {
-           menuLogin();
-       }
+        } catch (NumberFormatException | IOException e) {
+            System.out.println("Errore: selezione non valida\n");
+            menuLogin();
+        }
     }
         
     public void menuAmministratore() throws IOException {
@@ -174,7 +177,8 @@ public class ParadoxEntertainment {
                 break;
             
             case 5:
-                effettuaReso();
+                if(esistonoProiezioniRimborsabili())
+                    nuovoReso();
                 break;
                 
             default:
@@ -224,7 +228,6 @@ public class ParadoxEntertainment {
         if(bf.readLine().equals("1")) {
             //Viene aggiunto all'elenco delle sale del cinema
             confermaSala();
-            System.out.println("\nInserimento completato con successo");
         } else
             System.out.println("Inserimento annullato\n");
     }
@@ -278,8 +281,8 @@ public class ParadoxEntertainment {
     }
     
     public boolean esistonoSale() {
-        if(c.isElencoProiezioniEmpty()) {
-            System.out.println("\nNon esistono sale");
+        if(c.isElencoSaleEmpty()) {
+            System.out.println("\nNon esistono sale\n");
             return false;
         } else
             return true;
@@ -336,9 +339,18 @@ public class ParadoxEntertainment {
             System.out.println("Inserimento pellicola annullato\n");
     }
     
-    public void confermaPellicola() {
-        pellicolaCorrente.setIdPellicola(++idPellicole);
+    public void confermaPellicola(){
+        pellicolaCorrente.setIdPellicola(generaID(elencoPellicole));
         elencoPellicole.put(pellicolaCorrente.getIdPellicola(), pellicolaCorrente);
+        try { 
+            salvaSuFile();
+        } catch(IOException e) {
+            System.err.println("Errore nel salvataggio su file dell'oggetto: \n" + pellicolaCorrente.toString());
+            elencoPellicole.remove(pellicolaCorrente.getIdPellicola());
+            System.out.println("\nInserimento della pellicola annullato\n");
+            Logger.getLogger(ParadoxEntertainment.class.getName()).log(Level.SEVERE, null, e);
+            return;
+        }
         System.out.println("\nInserimento della Pellicola completato con successo\n");
     }
     
@@ -378,7 +390,7 @@ public class ParadoxEntertainment {
     
     public boolean esistonoPellicole() {
         if(elencoPellicole.isEmpty()) {
-            System.out.println("\nNon esistono pellicole");
+            System.out.println("\nNon esistono pellicole\n");
             return false;
         } else
             return true;
@@ -476,11 +488,25 @@ public class ParadoxEntertainment {
                 + "\n - Durata: " + durata
                 + "\n\nInserire 1 per confermare, altrimenti per annullare la modifica");
         if(bf.readLine().equals("1")) {
-            pellicolaSelezionata.modificaPellicola(titolo, regista, anno, genere, durata);
+            pellicolaCorrente = pellicolaSelezionata;
+            pellicolaCorrente.modificaPellicola(titolo, regista, anno, genere, durata);
+            try { 
+                salvaSuFile();
+            } catch(IOException e) {
+                System.err.println("Errore nel salvataggio su file dell'oggetto: \n" + pellicolaCorrente.toString());
+                elencoPellicole.replace(pellicolaCorrente.getIdPellicola(), pellicolaSelezionata);
+                System.out.println("\nModifica della pellicola annullato\n");
+                Logger.getLogger(ParadoxEntertainment.class.getName()).log(Level.SEVERE, null, e);
+                return;
+            }
             System.out.println("\nModifica effettuata con successo\n");
             if(variazioneDurata && c.proiezioniPerDataPellicola(idPellicola) > 0) {
-                System.out.println("\nPoiché la pellicola ha subito un aumento della durata, le relative proiezioni sopra elencate sono state eliminate");
-                c.eliminaProiezioniPerPellicola(pellicolaSelezionata.getIdPellicola());
+                if(c.eliminaProiezioniPerPellicola(pellicolaSelezionata.getIdPellicola()) > 0)
+                    System.out.println("\nPoiché la pellicola ha subito un aumento della durata, le relative proiezioni sopra elencate sono state eliminate");
+                else {
+                    elencoPellicole.replace(pellicolaCorrente.getIdPellicola(), pellicolaSelezionata);
+                    System.out.println("\nModifica della pellicola annullata perché non è stato possibile eliminare le relative proiezioni\n");
+                }
             }
         } else 
             System.out.println("Modifica annullata\n");
@@ -503,6 +529,14 @@ public class ParadoxEntertainment {
                 c.eliminaProiezioniPerPellicola(idPellicola);
             }
             pellicolaSelezionata = elencoPellicole.remove(idPellicola);
+            try { 
+                salvaSuFile();
+            } catch(IOException e) {
+                System.err.println("Errore nell'eliminazione dal file dell'oggetto: \n" + pellicolaSelezionata.toString());
+                elencoPellicole.put(pellicolaSelezionata.getIdPellicola(), pellicolaSelezionata);
+                System.out.println("\nEliminazione della pellicola annullato\n");
+                Logger.getLogger(ParadoxEntertainment.class.getName()).log(Level.SEVERE, null, e);
+            }
         } else
             System.out.println("Scelta non valida: pellicola inesistente nel sistema\n");
     }
@@ -523,6 +557,37 @@ public class ParadoxEntertainment {
             System.out.println("Non esistono pellicole\n");
     }
     
+    public int getUltimoIdPellicole() {
+        Map.Entry<Integer, Pellicola> maxEntry = null;
+        
+        if(elencoPellicole.isEmpty())
+            return 0;
+        else {
+            for(Map.Entry<Integer, Pellicola> entryPellicola : elencoPellicole.entrySet()) {
+                if(maxEntry == null || entryPellicola.getKey() > maxEntry.getKey()) {
+                    maxEntry = entryPellicola;
+                }
+            }
+            System.out.println("Il max ID è : " + maxEntry.getKey());
+            return maxEntry.getKey();
+        }
+    }
+    
+    public int getUltimoId(Map<Integer, ?> map) {
+        Map.Entry<Integer, ?> maxEntry = null;
+        
+        if(map.isEmpty())
+            return 0;
+        else {
+            for(Map.Entry<Integer, ?> entry : map.entrySet()) {
+                if(maxEntry == null || entry.getKey() > maxEntry.getKey()) {
+                    maxEntry = entry;
+                }
+            }
+            System.out.println("Il max ID è : " + maxEntry.getKey());
+            return maxEntry.getKey();
+        }
+    }
     
     // LOCANDINE
     public void nuovaLocandina() throws IOException {
@@ -556,6 +621,14 @@ public class ParadoxEntertainment {
     
     public void confermaLocandina() {
         elencoLocandine.put(locandinaCorrente.getPellicola(), locandinaCorrente);
+        try { 
+            salvaSuFile();
+        } catch(IOException e) {
+            System.err.println("Errore nel salvataggio su file dell'oggetto: \n" + locandinaCorrente.toString());
+            elencoLocandine.remove(locandinaCorrente.getPellicola());
+            System.out.println("\nInserimento della locandina annullato\n");
+            Logger.getLogger(ParadoxEntertainment.class.getName()).log(Level.SEVERE, null, e);
+        }
         System.out.println("\nInserimento della Locandina completato con successo\n");
     }
     
@@ -564,16 +637,23 @@ public class ParadoxEntertainment {
             System.out.println("\n" + entryLocandina.getValue().toString());
     }
     
-    public void eliminaLocandina(int idPellicola) {
+    public void eliminaLocandina(int idPellicola) throws IOException {
         locandinaSelezionata = elencoLocandine.remove(idPellicola);
-        
+        try { 
+            salvaSuFile();
+        } catch(IOException e) {
+            System.err.println("Errore nella rimozione dal file dell'oggetto: \n" + locandinaSelezionata.toString());
+            elencoLocandine.put(locandinaSelezionata.getPellicola(), locandinaSelezionata);
+            System.out.println("\nEliminazione della locandina annullata\n");
+            Logger.getLogger(ParadoxEntertainment.class.getName()).log(Level.SEVERE, null, e);
+        }
         if(locandinaSelezionata != null)
             System.out.println("Locandina di " + elencoPellicole.get(idPellicola).getNomePellicola() + " eliminata correttamente");    
     }
     
     public boolean esistonoLocandine() {
         if(elencoLocandine.isEmpty()) {
-            System.out.println("Non esistono locandine nel sistema\n");
+            System.out.println("\nNon esistono locandine nel sistema\n");
             return false;
         } else
             return true;
@@ -621,7 +701,7 @@ public class ParadoxEntertainment {
         }
         
         // Scelta dell'orario
-        System.out.println("Inserisci l'orario nel formato 'ora:minuti'");
+        System.out.println("\nInserisci l'orario nel formato 'ora:minuti'");
         
         try {
             orario = LocalTime.parse(bf.readLine(), DateTimeFormatter.ofPattern("HH:mm"));
@@ -639,14 +719,14 @@ public class ParadoxEntertainment {
             return;
         }
         
-        if(c.isOrarioSpettacoloValido(orario, idSala, pellicolaSelezionata.getDurata()))
+        if(c.isOrarioSpettacoloInseritoValido(orario, idSala, pellicolaSelezionata.getDurata()))
             inserisciProiezione(idPellicola, idSala, orario);
     }
     
     public void inserisciProiezione(int idPellicola, int idSala, LocalTime orario) throws IOException {
         pellicolaSelezionata = getPellicola(idPellicola);
         
-        c.inserisciProiezione(pellicolaCorrente, idSala, orario);
+        c.inserisciProiezione(pellicolaSelezionata, idSala, orario);
         
         System.out.println("\nPremere 1 per confermare, altrimenti per annullare l'inserimento"); 
         
@@ -723,12 +803,32 @@ public class ParadoxEntertainment {
         c.eliminaProiezione();
     }
     
+    public void stampaProiezione(int idProiezione) {
+        c.stampaProiezione(idProiezione);
+    }
+    
     public boolean esistonoProiezioni() {
         if(c.getNumeroProiezioni() == 0) {
-            System.out.println("\nNon esistono proiezioni");        
+            System.out.println("\nNon esistono proiezioni\n");        
             return false;
         }
         return true;
+    }
+    
+    public boolean esisteProiezione(int idProiezione) {
+        return c.esisteProiezione(idProiezione);
+    }
+    
+    public boolean esistonoProiezioniRimborsabili() {
+        return c.esistonoProiezioniRimborsabili();
+    }
+    
+    public boolean esistonoProiezioniConBigliettiVenduti() {
+        return c.esistonoProiezioniConBigliettiVenduti();
+    }
+    
+    public boolean isOrarioValidoPerRimborso(int idProiezione) {
+        return c.isOrarioValidoPerRimborso(idProiezione);
     }
     
     
@@ -784,8 +884,17 @@ public class ParadoxEntertainment {
     }
     
     public void confermaTessera() {
-        tesseraCorrente.setIdTessera(++idTessere);
+        tesseraCorrente.setIdTessera(generaID(elencoTessere));
         elencoTessere.put(tesseraCorrente.getIdTessera(), tesseraCorrente);
+        try { 
+            salvaSuFile();
+        } catch(IOException e) {
+            System.err.println("\nErrore nel salvataggio su file dell'oggetto:" + tesseraCorrente.toString());
+            elencoTessere.remove(tesseraCorrente.getIdTessera());
+            System.out.println("\nInserimento della tessera annullato\n");
+            Logger.getLogger(ParadoxEntertainment.class.getName()).log(Level.SEVERE, null, e);
+            return;
+        }
         System.out.println("\nInserimento della tessera completato con successo");
     }
     
@@ -811,7 +920,6 @@ public class ParadoxEntertainment {
     }
     
     public void stampaTessere() {
-        int i=0;
         if(elencoTessere.isEmpty()) 
             System.out.println("Non esistono tessere nel sistema\n");
         else 
@@ -861,8 +969,17 @@ public class ParadoxEntertainment {
                 + "\nInserisci 1 per confermare l'eliminazione, altro per annullare");
             if(bf.readLine().equals("1")) {
                 elencoTessere.remove(tesseraSelezionata.getIdTessera());
+                try { 
+                salvaSuFile();
+                } catch(IOException e) {
+                    System.err.println("\nErrore nell'eliminazione dal file dell'oggetto:" + tesseraSelezionata.toString());
+                    elencoTessere.put(tesseraSelezionata.getIdTessera(), tesseraSelezionata);
+                    System.out.println("\nEliminazione della tessera annullata\n");
+                    Logger.getLogger(ParadoxEntertainment.class.getName()).log(Level.SEVERE, null, e);
+                    return;
+                }
                 System.out.println("\nEliminazione effettuata con successo\n");
-            } else
+            } else 
                 System.out.println("\nEliminazione annullata\n");
         } else 
             System.out.println("\nTessera selezionata non valida\n");
@@ -911,7 +1028,17 @@ public class ParadoxEntertainment {
                     + "\n\nInserire 1 per confermare la modifica, altro per annullare"); 
 
             if(bf.readLine().equals("1")) {
-                tesseraSelezionata.modificaTessera(nome, cognome, dataDiNascita, codiceFiscale);
+                tesseraCorrente = tesseraSelezionata;
+                tesseraCorrente.modificaTessera(nome, cognome, dataDiNascita, codiceFiscale);
+                try { 
+                salvaSuFile();
+                } catch(IOException e) {
+                    System.err.println("\nErrore nel salvataggio sul file dell'oggetto:" + tesseraCorrente.toString());
+                    elencoTessere.replace(tesseraCorrente.getIdTessera(), tesseraSelezionata);
+                    System.out.println("\nModifica della tessera annullata\n");
+                    Logger.getLogger(ParadoxEntertainment.class.getName()).log(Level.SEVERE, null, e);
+                    return;
+                }
                 System.out.println("Modifica completata con successo\n");
             } else
                 System.out.println("Modifica annullata\n");
@@ -949,6 +1076,10 @@ public class ParadoxEntertainment {
         return null;
     }
     
+    public boolean esisteTessera(int idTessera) {
+        return getTessera(idTessera) != null;
+    }
+    
     public boolean esistonoTessere() {
         if(elencoTessere.isEmpty()) {
             System.out.println("\nNon esistono tessere\n");
@@ -973,7 +1104,7 @@ public class ParadoxEntertainment {
             return;
         }
         
-        if(isPellicolaProiettata(pellicolaCorrente) == false) {
+        if(isPellicolaProiettata(pellicolaSelezionata) == false) {
             System.out.println("\nErrore: la pellicola selezionata non ha alcuna proiezione programmata\n");
             return;
         }
@@ -1023,8 +1154,6 @@ public class ParadoxEntertainment {
     public void effettuaAcquisto(boolean isVIP, boolean isCategoriaProtetta) throws IOException {
         boolean isTesseraEsibita = false;
         float costoBiglietto;
-        int idTessera;
-        String inserimentoTessera;
         
         if( (costoBiglietto = c.effettuaAcquisto(isVIP, isCategoriaProtetta)) > 0) {
             System.out.println("PARADOX: " + costoBiglietto + "\n");
@@ -1074,48 +1203,155 @@ public class ParadoxEntertainment {
             }
             System.out.println("\nCosto biglietto: " + costoBiglietto + "€, inserire 1 per proseguire con l'acquisto");
             if(bf.readLine().equals("1"))
-                confermaAcquisto(costoBiglietto, isTesseraEsibita);
+                confermaAcquisto(isVIP, costoBiglietto, isTesseraEsibita);
             else
                 System.out.println("\nVendita annullata\n");
         }
     }
     
-    private void confermaAcquisto(float costoBiglietto, boolean isTesseraEsibita) throws IOException {
-        c.confermaAcquisto();
+    private void confermaAcquisto(boolean isVIP, float costoBiglietto, boolean isTesseraEsibita) throws IOException {
+        c.confermaAcquisto(isVIP);
         if(isTesseraEsibita)
             updatePointsStrategy.aggiornaPunti(tesseraSelezionata, costoBiglietto);
         System.out.println("\nVendita completata");
     }
     
-    public void effettuaReso() throws IOException {
-        // Trova tessera
-        tesseraSelezionata = trovaTessera();
-        
-        if(tesseraSelezionata != null) {
-            System.out.println("\nTessera selezionata: \n" + tesseraSelezionata.toString() + 
-                    "\nInserire 1 per confermare e proseguire, altrimenti per selezionare un'altra tessera");
-            if(!bf.readLine().equals("1"))
-                effettuaReso();
-            else {
-                if(c.effettuaReso()) {
-                    System.out.println("\nInserire 1 per confermare il rimborso del biglietto, altrimenti per annullare");
-                    if(bf.readLine().equals("1")) {
-                        confermaReso();
-                    }
-                }
-            }
-        } else
-            System.out.println("Operazione di rimborso annullata\n");
+    public boolean esisteBiglietto(int idProiezione, int idBiglietto) {
+        return c.esisteBiglietto(idProiezione, idBiglietto);
     }
     
-    public void confermaReso() {
-        float prezzoBiglietto;
-        prezzoBiglietto = c.confermaReso();
-        if(prezzoBiglietto > 0) {
-            updatePointsStrategy = new AggiungiPuntiRimborso();
-            updatePointsStrategy.aggiornaPunti(tesseraSelezionata, prezzoBiglietto);
-            System.out.println("Procedura di rimborso completata");
+    public float getPrezzoBigliettoVenduto(int idProiezione, int idBiglietto) {
+        return c.getPrezzoBigliettoVenduto(idProiezione, idBiglietto);
+    }
+    
+    public void stampaBigliettoVenduto(int idProiezione, int idBiglietto) {
+        c.stampaBigliettoVenduto(idProiezione, idBiglietto);
+    }
+    
+    public boolean isBigliettoVIP(int idProiezione, int idBiglietto) {
+        return c.isBigliettoVIP(idProiezione, idBiglietto);
+    }
+    
+    public void nuovoReso() throws IOException {
+        int idTessera, idProiezione, idBiglietto;
+        float prezzoTot;
+        String inserimentoTessera, inserimentoBiglietto;
+        
+        // Trova tessera
+        System.out.println("\nInserisci l'ID della tessera su cui effettuare il rimborso o premere Invio per stamparle tutte");
+        inserimentoTessera = bf.readLine();
+        if(inserimentoTessera.equals("")) {
+            stampaTessere();
+            System.out.println("\nInserisci l'ID della tessera: ");
+            inserimentoTessera = bf.readLine();
         }
+        idTessera = Integer.parseInt(inserimentoTessera);
+        if(esisteTessera(idTessera)) {
+            // Trova proiezione
+            System.out.println("\nSeleziona la proiezione del biglietto da rimborsare: \n");
+            c.stampaProiezioniRimborsabili();
+            idProiezione = Integer.parseInt(bf.readLine());
+            if(esisteProiezione(idProiezione)) {
+                if(isOrarioValidoPerRimborso(idProiezione)) {
+                    // Trova biglietto venduto
+                    System.out.println("\nInserisci il codice del biglietto da rimborsare o premere Invio per stamparli tutti:");
+                    inserimentoBiglietto = bf.readLine();
+                    if(inserimentoBiglietto.equals("")) {
+                        c.stampaBigliettiVenduti(idProiezione);
+                        System.out.println("\nInserisci l'ID del biglietto:");
+                        inserimentoBiglietto = bf.readLine();
+                    }
+                    idBiglietto = Integer.parseInt(inserimentoBiglietto);
+                    if(esisteBiglietto(idProiezione, idBiglietto)) {
+                        effettuaReso(idTessera, idProiezione, idBiglietto);
+                    } else
+                        System.out.println("\nNon esiste alcun biglietto venduto con il codice immesso\n");
+                } else
+                    System.out.println("\nLo spettacolo ha già avuto inizio e non è più possibile richiedere un rimborso\n");
+            } else
+                System.out.println("\nLa proiezione selezionata non esiste nel sistema\n");
+        } else
+            System.out.println("\nLa tessera inserita non esiste nel sistema\n");
+    }
+    
+    public void effettuaReso(int idTessera, int idProiezione, int idBiglietto) throws IOException {
+        float prezzoTot;
+        boolean isVIP;
+        
+        tesseraSelezionata = getTessera(idTessera);
+        if(tesseraSelezionata != null) {
+            c.effettuaReso(idProiezione, idBiglietto);
+        } else
+            System.out.println("\nErrore nel recupero della tessera nel sistema\n");
+        
+        prezzoTot = getPrezzoBigliettoVenduto(idProiezione, idBiglietto);
+        if(prezzoTot <= 0) {
+            System.out.println("\nErrore nel recupero del costo del biglietto per l'elaborazione del rimborso\n");
+            return;
+        }
+        
+        isVIP = isBigliettoVIP(idProiezione, idBiglietto);
+        
+        System.out.println("Riepilogo della richiesta di rimborso: "
+                + tesseraSelezionata.toString());
+        stampaProiezione(idProiezione);
+        stampaBigliettoVenduto(idProiezione, idBiglietto);
+        
+        System.out.println("\nInserire 1 per confermare il rimborso del biglietto, altrimenti per annullare");
+        
+        if(bf.readLine().equals("1")) {
+            confermaReso(prezzoTot, isVIP, idBiglietto);
+        } else
+            System.out.println("\nOperazione di rimborso annullata\n");
+    }
+    
+    public void confermaReso(float prezzoTot, boolean isVIP, int idBiglietto) {
+        c.confermaReso(idBiglietto, isVIP);
+        updatePointsStrategy = new AggiungiPuntiRimborso();
+        updatePointsStrategy.aggiornaPunti(tesseraSelezionata, prezzoTot);
+        System.out.println("Procedura di rimborso completata");
+    }
+    
+    
+    // VARIE
+    public int generaID(Map<Integer, ?> map) {
+        int idGenerato = 0;
+        do {
+            idGenerato++;
+        } while(map.get(idGenerato) != null);
+        return idGenerato;
+    }
+    
+    public void caricaDaFile() throws FileNotFoundException, IOException, ClassNotFoundException {
+        // Pellicole 
+        ObjectInputStream inputStream = new ObjectInputStream(new FileInputStream("Pellicole.bin"));
+        elencoPellicole = (HashMap<Integer, Pellicola>)inputStream.readObject();
+        
+        // Locandine
+        inputStream = new ObjectInputStream(new FileInputStream("Locandine.bin"));
+        elencoLocandine = (HashMap<Integer, Locandina>)inputStream.readObject();
+        
+        // Tessere
+        inputStream = new ObjectInputStream(new FileInputStream("Tessere.bin"));
+        elencoTessere = (HashMap<Integer, Tessera>)inputStream.readObject();
+        
+        c.caricaDaFile();
+    }
+    
+    public void salvaSuFile() throws IOException {
+        // Pellicole
+        ObjectOutputStream outputStream = new ObjectOutputStream(new FileOutputStream("Pellicole.bin"));
+        outputStream.writeObject(elencoPellicole);
+        
+        // Locandine 
+        outputStream = new ObjectOutputStream(new FileOutputStream("Locandine.bin"));
+        outputStream.writeObject(elencoLocandine);
+        
+        // Tessere
+        outputStream = new ObjectOutputStream(new FileOutputStream("Tessere.bin"));
+        outputStream.writeObject(elencoTessere);
+        
+        c.salvaSuFile();
     }
     
     public static String getInputPath(String s) {
@@ -1131,7 +1367,15 @@ public class ParadoxEntertainment {
          return jd.getSelectedFile().toString();
     }
     
-    public static void main(String[] args) throws IOException {
-        getInstance().menuLogin();   
+    public static void main(String[] args) {
+        try {
+            getInstance().caricaDaFile();
+        } catch (IOException ex) {
+            System.out.println("\nErrore nel caricamento da file dei dati già presenti\n");
+            //Logger.getLogger(ParadoxEntertainment.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (ClassNotFoundException ex) {
+            Logger.getLogger(ParadoxEntertainment.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        getInstance().menuLogin();
     }
 }

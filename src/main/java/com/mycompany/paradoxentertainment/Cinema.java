@@ -1,8 +1,13 @@
 package com.mycompany.paradoxentertainment;
 
 import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -10,6 +15,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -20,7 +27,6 @@ public class Cinema {
     private Sala salaCorrente, salaSelezionata;
     private Proiezione proiezioneCorrente, proiezioneSelezionata;
     private Map<Integer, Sala> elencoSale;
-    private int idSale = 0;
     private Map<Integer, List<Proiezione>>elencoProiezioni; // <IdSala, elencoProiezioniQuellaSala[]>
     BufferedReader bf = new BufferedReader(new InputStreamReader(System.in));
     int idProiezioni = 0;
@@ -35,6 +41,65 @@ public class Cinema {
         this.elencoSale = new HashMap();
         this.elencoProiezioni = new HashMap();
     }
+    
+    
+    // VARIE
+    public int generaID(Map<Integer, ?> map) {
+        int idGenerato = 0;
+        do {
+            idGenerato++;
+        } while(map.get(idGenerato) != null);
+        return idGenerato;
+    }
+    
+    /*
+    public int generaIDProiezione() {
+        int idGenerato = 0;
+        for(Map.Entry<Integer, List<Proiezione>> proiezioniSala : elencoProiezioni.entrySet()) {
+            for(Proiezione P: proiezioniSala.getValue()) {
+                if(P.getIdProiezione() == idGenerato && P != null)
+                    return idGenerato;
+            }
+        }
+    }
+    */
+    
+    public void caricaDaFile() throws FileNotFoundException, IOException, ClassNotFoundException {
+        // Sale
+        ObjectInputStream inputStream = new ObjectInputStream(new FileInputStream("Sale.bin"));
+        elencoSale = (HashMap<Integer, Sala>)inputStream.readObject();
+        
+        // Proiezioni
+        inputStream = new ObjectInputStream(new FileInputStream("Proiezioni.bin"));
+        elencoProiezioni = (HashMap<Integer, List<Proiezione>>)inputStream.readObject();
+        idProiezioni = (Integer)inputStream.readObject();
+
+        // Biglietti
+        for(Map.Entry<Integer, List<Proiezione>> proiezioniSala : elencoProiezioni.entrySet()) {
+            for(Proiezione P : proiezioniSala.getValue()) {
+                P.salvaSuFile();
+            }
+        }
+    }
+    
+    public void salvaSuFile() throws IOException {
+        // Sale
+        ObjectOutputStream outputStream = new ObjectOutputStream(new FileOutputStream("Sale.bin"));
+        outputStream.writeObject(elencoSale);
+        
+        // Proiezioni
+        outputStream = new ObjectOutputStream(new FileOutputStream("Proiezioni.bin"));
+        outputStream.writeObject(elencoProiezioni);
+        outputStream.writeObject(idProiezioni);
+        
+        // Biglietti
+        for(Map.Entry<Integer, List<Proiezione>> proiezioniSala : elencoProiezioni.entrySet()) {
+            for(Proiezione P : proiezioniSala.getValue()) {
+                P.salvaSuFile();
+            }
+        }
+    }
+    
     
     // SALE
     public boolean salaGiaEsistente(String nomeSala) {
@@ -63,10 +128,20 @@ public class Cinema {
     }
    
     public void confermaSala() {
-        salaCorrente.setIdSala(++idSale);
+        salaCorrente.setIdSala(generaID(elencoSale));
         elencoSale.put(salaCorrente.getIdSala(), salaCorrente);
         elencoProiezioni.put(salaCorrente.getIdSala(), new ArrayList());
-        salaCorrente.toString();
+        
+        try { 
+            salvaSuFile();
+        } catch(IOException e) {
+            System.err.println("\nErrore nel salvataggio su file dell'oggetto: \n" + salaCorrente.toString());
+            elencoSale.remove(salaCorrente.getIdSala());
+            System.out.println("\nInserimento della sala annullato\n");
+            Logger.getLogger(ParadoxEntertainment.class.getName()).log(Level.SEVERE, null, e);
+            return;
+        }
+        System.out.println("\nInserimento della Sala completato con successo\n");
     }
     
     public void stampaSala(int idSala) {
@@ -127,7 +202,17 @@ public class Cinema {
                     );
              
         if(bf.readLine().equals("1")) {
-            salaSelezionata.modificaSala(nomeSala, postiStandard, postiVIP);
+            salaCorrente = salaSelezionata;
+            salaCorrente.modificaSala(nomeSala, postiStandard, postiVIP);
+            try { 
+                salvaSuFile();
+            } catch(IOException e) {
+                System.err.println("\nErrore nel salvataggio sul file dell'oggetto:" + salaCorrente.toString());
+                elencoSale.replace(salaCorrente.getIdSala(), salaSelezionata);
+                System.out.println("\nModifica della Sala annullata\n");
+                Logger.getLogger(ParadoxEntertainment.class.getName()).log(Level.SEVERE, null, e);
+                return;
+            }    
             System.out.println("\nModifica effettuata con successo\n");
         } else 
             System.out.println("Modifica annullata\n");
@@ -137,7 +222,7 @@ public class Cinema {
         int idSala;
         
         stampaSale();
-        System.out.println("\nInserire l'ID della sala da modificare");
+        System.out.println("\nInserire l'ID della sala da eliminare");
         idSala = Integer.parseInt(bf.readLine());
         
         if((salaSelezionata = elencoSale.get(idSala)) == null) {
@@ -146,9 +231,53 @@ public class Cinema {
             System.out.println("\nSala selezionata: " + salaSelezionata.toString());
             System.out.println("\nInserire 1 per confermare l'eliminazione, altrimenti per annullare");
             if(bf.readLine().equals("1")) {
-                elencoSale.remove(salaSelezionata.getIdSala());
+                if(!elencoProiezioni.get(salaSelezionata.getIdSala()).isEmpty()) {
+                    stampaProiezioniSala(salaSelezionata.getIdSala());
+                    System.out.println("\nIn seguito all'eliminazione della pellicola, anche le relative proiezioni sopra elencate sono state eliminate");
+                    elencoProiezioni.get(salaSelezionata.getIdSala()).clear();
+                }
                 elencoProiezioni.remove(salaSelezionata.getIdSala());
+                elencoSale.remove(salaSelezionata.getIdSala());
+                System.out.println("\nEliminazione completata\n");
+                 try { 
+                    salvaSuFile();
+                } catch(IOException e) {
+                    System.err.println("Errore nell'eliminazione dal file dell'oggetto: \n" + salaSelezionata.toString());
+                    elencoSale.put(salaSelezionata.getIdSala(), salaSelezionata);
+                    System.out.println("\nEliminazione della Sala annullato\n");
+                    Logger.getLogger(ParadoxEntertainment.class.getName()).log(Level.SEVERE, null, e);
+                    return;
+                }
+                
+                /*
+                elencoSale.remove(salaSelezionata.getIdSala());
+                
+                try { 
+                    salvaSuFile();
+                } catch(IOException e) {
+                    System.err.println("Errore nell'eliminazione dal file dell'oggetto: \n" + salaSelezionata.toString());
+                    elencoSale.put(salaSelezionata.getIdSala(), salaSelezionata);
+                    System.out.println("\nEliminazione della Sala annullato\n");
+                    Logger.getLogger(ParadoxEntertainment.class.getName()).log(Level.SEVERE, null, e);
+                    return;
+                }
+                
+                elencoProiezioni.remove(salaSelezionata.getIdSala());
+                try { 
+                    salvaSuFile();
+                } catch(IOException e) {
+                    System.err.println("Errore nell'eliminazione dal file della lista di proiezioni della Sala: \n" + salaSelezionata.toString());
+                    elencoSale.put(salaSelezionata.getIdSala(), salaSelezionata);
+                    elencoProiezioni.put(salaSelezionata.getIdSala(), new ArrayList());
+                    System.out.println("\nEliminazione della Sala annullata\n");
+                    Logger.getLogger(ParadoxEntertainment.class.getName()).log(Level.SEVERE, null, e);
+                }
                 System.out.println("Eliminazione completata\n");
+                if(!elencoProiezioni.get(salaSelezionata.getIdSala()).isEmpty()) {
+                    System.out.println("\nIn seguito all'eliminazione della pellicola, anche le relative proiezioni sopra elencate sono state eliminate");
+                    elencoProiezioni.get(salaSelezionata.getIdSala()).clear();
+                }
+                */
             } else
                 System.out.println("Eliminazione annullata\n");
         }
@@ -184,6 +313,17 @@ public class Cinema {
     public void confermaProiezione() {
         proiezioneCorrente.setIdProiezione(++idProiezioni);
         elencoProiezioni.get(salaSelezionata.getIdSala()).add(proiezioneCorrente);
+        
+        try { 
+            salvaSuFile();
+        } catch(IOException e) {
+            System.err.println("\nErrore nel salvataggio su file dell'oggetto: \n" + proiezioneCorrente.toString());
+            elencoProiezioni.get(salaSelezionata.getIdSala()).remove(proiezioneCorrente.getIdProiezione());
+            idProiezioni--;
+            System.out.println("\nInserimento della proiezione annullato\n");
+            Logger.getLogger(ParadoxEntertainment.class.getName()).log(Level.SEVERE, null, e);
+            return;
+        }
         System.out.println("\nInserimento della proiezione completato con successo\n");
     }
     
@@ -254,8 +394,17 @@ public class Cinema {
         
         if(bf.readLine().equals("1")) {
             elencoProiezioni.get(proiezioneSelezionata.getSala().getIdSala()).remove(proiezioneSelezionata);
-            proiezioneSelezionata.modificaProiezione(p, salaSelezionata, orario);
-            elencoProiezioni.get(salaSelezionata.getIdSala()).add(proiezioneSelezionata);
+            proiezioneCorrente = proiezioneSelezionata;
+            proiezioneCorrente.modificaProiezione(p, salaSelezionata, orario);
+            try { 
+                salvaSuFile();
+            } catch(IOException e) {
+                System.err.println("\nErrore nel salvataggio sul file dell'oggetto:" + proiezioneCorrente.toString());
+                elencoProiezioni.get(proiezioneCorrente.getSala().getIdSala()).add(proiezioneCorrente.getIdProiezione(), proiezioneSelezionata);
+                System.out.println("\nModifica della Proiezione annullata\n");
+                Logger.getLogger(ParadoxEntertainment.class.getName()).log(Level.SEVERE, null, e);
+                return;
+            }    
             System.out.println("\nModifica effettuata con successo\n");
         } else
             System.out.println("\nModifica annullata\n");
@@ -281,7 +430,7 @@ public class Cinema {
     
     // Elimina tutte le proiezioni di una certa Pellicola dato il suo ID, 
     // restituendo il numero di pellicole eliminate
-    public int eliminaProiezioniPerPellicola(int idPellicola) {
+    public int eliminaProiezioniPerPellicola(int idPellicola) throws IOException {
         int numeroProiezioniEliminate = 0;
         List<Proiezione> proiezioniDaRimuovere = new ArrayList();
         
@@ -293,6 +442,15 @@ public class Cinema {
                 }
             }
             proiezioniSala.getValue().removeAll(proiezioniDaRimuovere);
+            try {
+                salvaSuFile();
+            } catch(IOException e) {
+                System.err.println("Errore nell'eliminazione dell'oggetto: \n" + salaSelezionata.toString());
+                elencoProiezioni.get(proiezioniSala.getKey()).addAll(proiezioniDaRimuovere);
+                System.out.println("\nEliminazione delle proiezioni annullata\n");
+                Logger.getLogger(ParadoxEntertainment.class.getName()).log(Level.SEVERE, null, e);
+                return 0;
+            }
         }
         return numeroProiezioniEliminate;
     }
@@ -313,6 +471,14 @@ public class Cinema {
                 // Se si è confermata l'eliminazione inserendo 1
                 if(bf.readLine().equals("1")) {
                     elencoProiezioni.get(proiezioneSelezionata.getSala().getIdSala()).remove(proiezioneSelezionata);
+                    try {
+                        salvaSuFile();
+                    } catch(IOException e) {
+                        System.err.println("Errore nell'eliminazione dal file dell'oggetto: \n" + proiezioneSelezionata.toString());
+                        elencoProiezioni.get(proiezioneSelezionata.getIdProiezione()).add(idProiezioneDaEliminare, proiezioneSelezionata);
+                        System.out.println("\nEliminazione della Proiezione annullata\n");
+                        Logger.getLogger(ParadoxEntertainment.class.getName()).log(Level.SEVERE, null, e);
+                    }
                     System.out.println("\nEliminazione completata\n");
                     /*
                     for(Map.Entry<Integer, List<Proiezione>> proiezioniSala : elencoProiezioni.entrySet()) {
@@ -340,6 +506,48 @@ public class Cinema {
             System.out.println("\n");
             for(Map.Entry<Integer, List<Proiezione>> proiezioniSala : elencoProiezioni.entrySet()) {
                 stampaProiezioniSala(proiezioniSala.getKey());
+            }
+        }
+    }
+    
+    public void stampaProiezioniNonIniziate() {
+        if(elencoProiezioni.isEmpty()) 
+            System.out.println("Non esistono proiezioni\n");
+        else {
+            System.out.println("\n");
+            for(Map.Entry<Integer, List<Proiezione>> proiezioniSala : elencoProiezioni.entrySet()) {
+                for(Proiezione P : proiezioniSala.getValue()) {
+                    if(P.getOrario().isAfter(LocalTime.now()))
+                        System.out.println("\n" + P.stampaProiezioneConSala());
+                }
+            }
+        }
+    }
+    
+    public boolean esistonoProiezioniRimborsabili() {
+        if(elencoProiezioni.isEmpty()) 
+            return false;
+        else {
+            for(Map.Entry<Integer, List<Proiezione>> proiezioniSala : elencoProiezioni.entrySet()) {
+                for(Proiezione P : proiezioniSala.getValue()) {
+                    if(P.getOrario().isAfter(LocalTime.now()) && !P.getBigliettiVenduti().isEmpty())
+                        return true;
+                }
+            }
+            System.out.println("\nNon esistono proiezioni rimborsabili (non ancora iniziate e che abbiano biglietti venduti)\n");
+            return false;
+        }
+    }
+    
+    public void stampaProiezioniRimborsabili() {
+        if(elencoProiezioni.isEmpty()) 
+            System.out.println("Non esistono proiezioni\n");
+        else {
+            for(Map.Entry<Integer, List<Proiezione>> proiezioniSala : elencoProiezioni.entrySet()) {
+                for(Proiezione P : proiezioniSala.getValue()) {
+                    if(P.getOrario().isAfter(LocalTime.now()) && !P.getBigliettiVenduti().isEmpty())
+                        System.out.println("\n" + P.stampaProiezioneConSala());
+                }
             }
         }
     }
@@ -425,7 +633,7 @@ public class Cinema {
         } return false;
     }
     
-    public boolean isOrarioSpettacoloValido(LocalTime orario, int idSala, int durataPellicola) {
+    public boolean isOrarioSpettacoloInseritoValido(LocalTime orario, int idSala, int durataPellicola) {
         boolean isValid = true;
         
         // verifica dello spettacolo in inserimento 
@@ -445,6 +653,28 @@ public class Cinema {
             }
         }
         return isValid;
+    }
+    
+    public boolean isOrarioValidoPerRimborso(int idProiezione) {
+        return getProiezione(idProiezione).getOrario().isAfter(LocalTime.now());
+    }
+    
+    public boolean esistonoProiezioniConBigliettiVenduti() {
+        if(!elencoProiezioni.isEmpty()) {
+            for(Map.Entry<Integer, List<Proiezione>> proiezioniSala : elencoProiezioni.entrySet()) {
+                if(!proiezioniSala.getValue().isEmpty()) {
+                    for(Proiezione P: proiezioniSala.getValue()) {
+                        if(!P.getBigliettiVenduti().isEmpty()) {
+                            return true;
+                        }
+                    }
+                }
+            }
+            System.out.println("\nNon esistono biglietti venduti per nessuno degli spettacoli presenti nel sistema\n");
+        } else {
+            System.out.println("\nNon esistono spettacoli nel sistema\n");
+        }
+        return false;
     }
     
     
@@ -482,6 +712,10 @@ public class Cinema {
         return false;
     }
     
+    public boolean esisteProiezione(int idProiezione) {
+        return getProiezione(idProiezione) != null;
+    }
+    
     public float effettuaAcquisto(boolean isVIP, boolean isCategoriaProtetta) {
         float costoBiglietto;
         
@@ -506,30 +740,46 @@ public class Cinema {
         }
     }
     
-    public void confermaAcquisto() {
-        proiezioneSelezionata.confermaAcquisto();
+    public void confermaAcquisto(boolean isVIP) {
+        proiezioneSelezionata.confermaAcquisto(isVIP);
     }
     
-    public boolean effettuaReso() throws IOException {
+    public boolean esisteBiglietto(int idProiezione, int idBiglietto) {
+        return getProiezione(idProiezione).esisteBigliettoVenduto(idBiglietto);
+    }
+    
+    public float getPrezzoBigliettoVenduto(int idProiezione, int idBiglietto) {
+        return getProiezione(idProiezione).getBigliettoVenduto(idBiglietto).getPrezzoTot();
+    }
+    
+    public boolean isBigliettoVIP(int idProiezione, int idBiglietto) {
+        return getProiezione(idProiezione).getBigliettoVenduto(idBiglietto).getIsVIP();
+    }
+    
+    public void stampaBigliettoVenduto(int idProiezione, int idBiglietto) {
+        if(getProiezione(idProiezione) != null) {
+            getProiezione(idProiezione).stampaBigliettoVenduto(idBiglietto);
+        } else
+            System.out.println("\nErrore: proiezione non trovata nel sistema\n");
+    }
+    
+    public void stampaBigliettiVenduti(int idProiezione) {
+        if(esisteProiezione(idProiezione)) {
+            getProiezione(idProiezione).stampaBigliettiVenduti();
+        }
+    }
+    
+    public void effettuaReso(int idProiezione, int idBiglietto) throws IOException {
         // Trova proiezione
-        proiezioneSelezionata = trovaProiezione();
+        proiezioneSelezionata = getProiezione(idProiezione);
         
         if(proiezioneSelezionata != null) {
-            if(proiezioneSelezionata.getOrario().isAfter(LocalTime.now())) {
-                System.out.println("\nProiezione selezionata: \n" + proiezioneSelezionata.toString() + 
-                        "\nInserire 1 per confermare e proseguire, altrimenti per selezionare un'altra proiezione");
-                if(!bf.readLine().equals("1"))
-                    effettuaReso();
-                else 
-                    return proiezioneSelezionata.effettuaReso();
-            } else
-                System.out.println("Errore: lo spettacolo ha già avuto inizio e non è più possibile richiedere il rimborso\n");
+            proiezioneSelezionata.effettuaReso(idBiglietto);
         } else
-            System.out.println("Operazione di rimborso annullata\n");
-        return false;
+            System.out.println("\nErrore nel recupero della proiezione nel sistema\n");
     }
     
-    public float confermaReso() {
-        return proiezioneSelezionata.confermaReso();
+    public void confermaReso(int idBiglietto, boolean isVIP) {
+        getProiezione(idProiezioni).confermaReso(idBiglietto, isVIP);
     }
 }
