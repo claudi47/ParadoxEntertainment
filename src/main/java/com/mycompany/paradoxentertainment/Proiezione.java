@@ -8,11 +8,9 @@ import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
-import java.time.DayOfWeek;
-import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -34,7 +32,6 @@ public class Proiezione implements Serializable {
     private List<Biglietto> bigliettiRimborsati;
     private transient BufferedReader bf = new BufferedReader(new InputStreamReader(System.in));
     UpdateSeatsStrategy updateSeatsStrategy;
-    private static int idBiglietti = 0;
 
     public Proiezione(Sala sala, Pellicola pellicola, LocalTime orario) {
         this.sala = sala;
@@ -91,6 +88,10 @@ public class Proiezione implements Serializable {
         return bigliettiVenduti;
     }
 
+    public List<Biglietto> getBigliettiRimborsati() {
+        return bigliettiRimborsati;
+    }
+
     public void setIdProiezione(int idProiezione) {
         this.idProiezione = idProiezione;
     }
@@ -125,7 +126,7 @@ public class Proiezione implements Serializable {
     public Biglietto getBigliettoVenduto(int idBiglietto) {
         for(Biglietto B: bigliettiVenduti) {
             if(B.getIdBiglietto() == idBiglietto) {
-                System.out.println("\nBiglietto trovato relativo alla proiezione ID = " + idProiezione + ":\n" + B.toString());
+                //System.out.println("\nBiglietto trovato relativo alla proiezione ID = " + B.getProiezione().getIdProiezione() + ":\n" + B.toString());
                 return B;
             }
         }
@@ -134,7 +135,7 @@ public class Proiezione implements Serializable {
     
     public void stampaBigliettoVenduto(int idBiglietto) {
         if(getBigliettoVenduto(idBiglietto) != null) {
-            getBigliettoVenduto(idBiglietto).toString();
+            System.out.println(getBigliettoVenduto(idBiglietto).toString());
         } else
             System.out.println("\nErrore: biglietto non trovato nel sistema\n");   
     }
@@ -144,12 +145,33 @@ public class Proiezione implements Serializable {
             for(Biglietto B: bigliettiVenduti) {
                 System.out.println(B.toString());
             }
-        }
+        } else
+            System.out.println("\nNon è stato venduto alcun biglietto per la proiezione selezionata\n");
+    }
+    
+    public void stampaBigliettiRimborsati() {
+        if(!bigliettiRimborsati.isEmpty()) {
+            for(Biglietto B: bigliettiRimborsati) {
+                System.out.println(B.toString());
+            }
+        } else
+            System.out.println("\nNon è stato rimborsato alcun biglietto per la proiezione selezionata\n");
     }
     
     public float creaBiglietto(boolean isVIP, boolean isCategoriaProtetta) {
+        String tipoBiglietto = isCategoriaProtetta ? "Ridotto" : "Intero";
+        String poltrona = isVIP ? "VIP" : "Standard";
+        
         bigliettoCorrente = TicketFactory.creaBiglietto(isVIP, isCategoriaProtetta, this);
-        System.out.println("\nRiepilogo acquisto: \n" + bigliettoCorrente.toString());
+        System.out.println("\nRiepilogo acquisto: \n" 
+                + "\n - Spettacolo: " + bigliettoCorrente.getProiezione().getPellicola().getNomePellicola()
+                + "\n - Sala: " + bigliettoCorrente.getProiezione().getSala().getNomeSala()
+                + "\n - Data: " + bigliettoCorrente.getData().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) 
+                + "\n - Orario: " + bigliettoCorrente.getProiezione().getOrario()
+                + "\n - Tipologia: " + tipoBiglietto
+                + "\n - Poltrona: " + poltrona
+                + "\n - Costo: " + bigliettoCorrente.getPrezzoTot()
+        );
         return bigliettoCorrente.getPrezzoTot();        
     }
     
@@ -157,22 +179,22 @@ public class Proiezione implements Serializable {
         updateSeatsStrategy.aggiornaPosti(this, isVIP);
     }
     
-    public void confermaAcquisto(boolean isVIP) {
-        bigliettoCorrente.setIdBiglietto(++idBiglietti);
+    public void confermaAcquisto(boolean isVIP, int idBiglietto) {
+        bigliettoCorrente.setIdBiglietto(idBiglietto);
         bigliettiVenduti.add(bigliettoCorrente);
+        updateSeatsStrategy = new RimuoviPosto();
+        aggiornaPosti(this, isVIP);
+        
         try { 
             salvaSuFile();
         } catch(IOException e) {
             System.err.println("\nErrore nel salvataggio su file dell'oggetto: \n" + bigliettoCorrente.toString());
             bigliettiVenduti.remove(bigliettoCorrente);
-            idBiglietti--;
+            updateSeatsStrategy = new AggiungiPosto();
+            aggiornaPosti(this, isVIP);
             System.out.println("\nVendita annullata\n");
             Logger.getLogger(ParadoxEntertainment.class.getName()).log(Level.SEVERE, null, e);
-            return;
         }
-        System.out.println("\nPROIEZIONE: biglietto aggiunto all'elenco\n");
-        updateSeatsStrategy = new RimuoviPosto();
-        aggiornaPosti(this, isVIP);
     }
     
     public boolean esisteBigliettoVenduto(int idBiglietto) {
@@ -212,10 +234,22 @@ public class Proiezione implements Serializable {
     }
     
     public void confermaReso(int idBiglietto, boolean isVIP) {
-        bigliettiRimborsati.add(getBigliettoVenduto(idBiglietto));
-        bigliettiVenduti.remove(getBigliettoVenduto(idBiglietto));
+        bigliettiRimborsati.add(bigliettoSelezionato);
+        bigliettiVenduti.remove(bigliettoSelezionato);
         updateSeatsStrategy = new AggiungiPosto();
         aggiornaPosti(this, isVIP);
+        
+        try { 
+            salvaSuFile();
+        } catch(IOException e) {
+            System.err.println("\nErrore nel salvataggio su file dell'oggetto: \n" + bigliettoSelezionato.toString());
+            bigliettiRimborsati.remove(bigliettoSelezionato);
+            bigliettiVenduti.add(bigliettoSelezionato);
+            updateSeatsStrategy = new AggiungiPosto();
+            aggiornaPosti(this, isVIP);
+            System.out.println("\nRimborso annullato\n");
+            Logger.getLogger(ParadoxEntertainment.class.getName()).log(Level.SEVERE, null, e);
+        }
     }
     
     public void caricaDaFile() throws FileNotFoundException, IOException, ClassNotFoundException {
@@ -224,10 +258,8 @@ public class Proiezione implements Serializable {
         this.bigliettiVenduti = (List<Biglietto>)inputStream.readObject();
         
         // Biglietti rimborsati
-        inputStream = new ObjectInputStream(new FileInputStream("BigliettiVenduti.bin"));
+        inputStream = new ObjectInputStream(new FileInputStream("BigliettiRimborsati.bin"));
         this.bigliettiRimborsati = (List<Biglietto>)inputStream.readObject();
-        
-        idBiglietti = (Integer)inputStream.readObject();
     }
     
     public void salvaSuFile() throws IOException {
@@ -238,8 +270,6 @@ public class Proiezione implements Serializable {
         // Biglietti rimborsati
         outputStream = new ObjectOutputStream(new FileOutputStream("BigliettiRimborsati.bin"));
         outputStream.writeObject(this.bigliettiRimborsati);
-        
-        outputStream.writeObject(idBiglietti);
     }
     
     @Override

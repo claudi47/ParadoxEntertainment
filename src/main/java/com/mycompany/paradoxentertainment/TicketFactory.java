@@ -14,8 +14,6 @@ public class TicketFactory {
         DayOfWeek giornoDellaSettimana = LocalDate.now().getDayOfWeek();
         Biglietto biglietto;
         
-        System.out.println("TEST: Factory, stampo il giorno di oggi: " + giornoDellaSettimana);
-        
         if(giornoDellaSettimana.toString().equals("SATURDAY") || giornoDellaSettimana.toString().equals("SUNDAY"))
             biglietto = new BigliettoWeekend(isVIP, isCategoriaProtetta, proiezione);
         else

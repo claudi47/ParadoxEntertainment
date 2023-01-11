@@ -35,6 +35,22 @@ public abstract class Biglietto implements Serializable {
         return isVIP;
     }
 
+    public LocalDate getData() {
+        return data;
+    }
+
+    public boolean isIsVIP() {
+        return isVIP;
+    }
+
+    public boolean isIsCategoriaProtetta() {
+        return isCategoriaProtetta;
+    }
+
+    public Proiezione getProiezione() {
+        return proiezione;
+    }
+    
     public void setIdBiglietto(int idBiglietto) {
         this.idBiglietto = idBiglietto;
     }
