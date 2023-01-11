@@ -1174,7 +1174,7 @@ public class ParadoxEntertainment {
                 Logger.getLogger(ParadoxEntertainment.class.getName()).log(Level.SEVERE, null, e);
             }
         }
-        System.out.println("\nVendita completata\n1");
+        System.out.println("\nVendita completata\n");
     }
     
     public boolean esisteBiglietto(int idProiezione, int idBiglietto) {
