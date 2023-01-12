@@ -28,6 +28,15 @@ public class Cinema {
     private Proiezione proiezioneCorrente, proiezioneSelezionata;
     private Map<Integer, Sala> elencoSale;
     private Map<Integer, List<Proiezione>>elencoProiezioni; // <IdSala, elencoProiezioniQuellaSala[]>
+
+    public BufferedReader getBf() {
+        return bf;
+    }
+
+    public void setBf(BufferedReader bf) {
+        this.bf = bf;
+    }
+
     private BufferedReader bf = new BufferedReader(new InputStreamReader(System.in));
     int idProiezioni = 0;
     int idBiglietti = 0;
@@ -788,4 +797,30 @@ public class Cinema {
             Logger.getLogger(ParadoxEntertainment.class.getName()).log(Level.SEVERE, null, e);
         }
     }
+
+    public int getNumeroSale() {
+
+        int count = 0;
+        for(Map.Entry entry : getElencoSale().entrySet())
+            count++;
+
+        return count;
+    }
+
+    public Map<Integer, Sala> getElencoSale() {
+        return elencoSale;
+    }
+
+    public void setElencoSale(Map<Integer, Sala> elencoSale) {
+        this.elencoSale = elencoSale;
+    }
+
+    public Map<Integer, List<Proiezione>> getElencoProiezioni() {
+        return elencoProiezioni;
+    }
+
+    public void setElencoProiezioni(Map<Integer, List<Proiezione>> elencoProiezioni) {
+        this.elencoProiezioni = elencoProiezioni;
+    }
+
 }

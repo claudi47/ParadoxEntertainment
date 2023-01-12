@@ -12,6 +12,7 @@ import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -281,5 +282,30 @@ public class Proiezione implements Serializable {
                 "\n - Posti totali rimanenti: " + postiRimanentiTot + 
                 "\n - Posti standard rimanenti: " + postiRimanentiStandard + 
                 "\n - Posti VIP rimanenti: " + postiRimanentiVIP;
+    }
+
+
+    public void setBigliettiVenduti(List<Biglietto> bigliettiVenduti) {
+        this.bigliettiVenduti = bigliettiVenduti;
+    }
+
+    public void setBigliettiRimborsati(List<Biglietto> bigliettiRimborsati) {
+        this.bigliettiRimborsati = bigliettiRimborsati;
+    }
+
+    public BufferedReader getBf() {
+        return bf;
+    }
+
+    public void setBf(BufferedReader bf) {
+        this.bf = bf;
+    }
+
+    public int getNumeroBigliettiVenduti() {
+        return getBigliettiVenduti().size();
+    }
+
+    public int getNumeroBigliettiRimborsati() {
+        return getBigliettiRimborsati().size();
     }
 }

@@ -1380,4 +1380,13 @@ public class ParadoxEntertainment {
         }
         getInstance().menuLogin();
     }
+
+    public int getNumeroTessere() {
+        int count = 0;
+
+        for(Map.Entry entry : getElencoTessere().entrySet())
+            count++;
+
+        return count;
+    }
 }
